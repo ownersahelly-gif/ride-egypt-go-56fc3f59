@@ -150,9 +150,12 @@ const Signup = () => {
         }
       }
 
-      // Update phone in profile (may fail without session, that's ok)
-      if (phone && hasSession) {
-        await supabase.from('profiles').update({ phone }).eq('user_id', userId);
+      // Update profile with phone and user_type
+      if (hasSession) {
+        await supabase.from('profiles').update({
+          user_type: role === 'driver' ? 'driver' as const : 'customer' as const,
+          ...(phone ? { phone } : {}),
+        }).eq('user_id', userId);
       }
 
       if (role === 'driver') {
