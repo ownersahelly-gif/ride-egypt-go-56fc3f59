@@ -152,9 +152,10 @@ const Signup = () => {
 
       // Update profile with phone and user_type
       if (hasSession) {
-        const profileUpdate: Record<string, any> = { user_type: role };
-        if (phone) profileUpdate.phone = phone;
-        await supabase.from('profiles').update(profileUpdate).eq('user_id', userId);
+        await supabase.from('profiles').update({
+          user_type: role === 'driver' ? 'driver' as const : 'customer' as const,
+          ...(phone ? { phone } : {}),
+        }).eq('user_id', userId);
       }
 
       if (role === 'driver') {
