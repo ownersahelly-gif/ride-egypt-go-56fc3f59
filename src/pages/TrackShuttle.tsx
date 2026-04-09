@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button';
 import MapView from '@/components/MapView';
 import {
   ChevronLeft, ChevronRight, MapPin, Clock, Car, RefreshCw,
-  Radio, Users, Navigation, Phone, MessageCircle, Key
+  Radio, Users, Navigation, Phone, MessageCircle, Key, ArrowRight
 } from 'lucide-react';
-import RideChat from '@/components/RideChat';
 
 interface PassengerStop {
   userId: string;
