@@ -102,43 +102,67 @@ export type Database = {
       }
       driver_applications: {
         Row: {
+          car_license_url: string | null
           created_at: string
+          criminal_record_url: string | null
+          driving_license_url: string | null
           experience_years: number
           id: string
+          id_back_url: string | null
+          id_front_url: string | null
           license_number: string
           notes: string | null
+          phone: string | null
           status: string
+          uber_proof_url: string | null
           updated_at: string
           user_id: string
           vehicle_model: string
           vehicle_plate: string
           vehicle_year: number
+          was_uber_driver: boolean | null
         }
         Insert: {
+          car_license_url?: string | null
           created_at?: string
+          criminal_record_url?: string | null
+          driving_license_url?: string | null
           experience_years?: number
           id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
           license_number: string
           notes?: string | null
+          phone?: string | null
           status?: string
+          uber_proof_url?: string | null
           updated_at?: string
           user_id: string
           vehicle_model: string
           vehicle_plate: string
           vehicle_year: number
+          was_uber_driver?: boolean | null
         }
         Update: {
+          car_license_url?: string | null
           created_at?: string
+          criminal_record_url?: string | null
+          driving_license_url?: string | null
           experience_years?: number
           id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
           license_number?: string
           notes?: string | null
+          phone?: string | null
           status?: string
+          uber_proof_url?: string | null
           updated_at?: string
           user_id?: string
           vehicle_model?: string
           vehicle_plate?: string
           vehicle_year?: number
+          was_uber_driver?: boolean | null
         }
         Relationships: []
       }
