@@ -313,7 +313,7 @@ const AdminPanel = () => {
                     <p className="text-xs text-muted-foreground">{routeForm.destination_lat.toFixed(4)}, {routeForm.destination_lng.toFixed(4)}</p>
                   </div>
                   <div className="space-y-2">
-                    <Label>Price (EGP)</Label>
+                    <Label>{lang === 'ar' ? 'السعر للفرد (جنيه)' : 'Price per person (EGP)'}</Label>
                     <Input type="number" value={routeForm.price} onChange={e => setRouteForm(p => ({ ...p, price: parseFloat(e.target.value) }))} />
                   </div>
                   <div className="space-y-2">
