@@ -25,6 +25,8 @@ const DriverDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
+  useDriverBookingNotifications(shuttle?.id || null);
+
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
