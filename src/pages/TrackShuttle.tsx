@@ -28,6 +28,7 @@ interface PassengerStop {
 const TrackShuttle = () => {
   const { user } = useAuth();
   const { t, lang } = useLanguage();
+  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const bookingId = searchParams.get('booking');
   const Back = lang === 'ar' ? ChevronRight : ChevronLeft;
@@ -39,6 +40,7 @@ const TrackShuttle = () => {
   const [loading, setLoading] = useState(true);
   const [isLive, setIsLive] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [sosActive, setSosActive] = useState(false);
 
   // All bookings on this ride (for calculating stops before current user)
   const [rideBookings, setRideBookings] = useState<any[]>([]);
