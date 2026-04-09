@@ -150,7 +150,6 @@ const AdminPanel = () => {
 
   const seedTestData = async () => {
     try {
-      // 1. Create test routes
       const testRoutes = [
         {
           name_en: 'Madinaty - Smart Village', name_ar: 'مدينتي - القرية الذكية',
@@ -181,7 +180,6 @@ const AdminPanel = () => {
       const { data: insertedRoutes, error: routeErr } = await supabase.from('routes').insert(testRoutes).select();
       if (routeErr) throw routeErr;
 
-      // 2. Create test shuttles
       const testShuttles = [
         { vehicle_model: 'Toyota HiAce 2024', vehicle_plate: 'ق ب ج 1234', capacity: 14, status: 'active' },
         { vehicle_model: 'Mercedes Sprinter 2023', vehicle_plate: 'أ ب ت 5678', capacity: 16, status: 'active' },
@@ -191,46 +189,31 @@ const AdminPanel = () => {
       const { data: insertedShuttles, error: shuttleErr } = await supabase.from('shuttles').insert(testShuttles).select();
       if (shuttleErr) throw shuttleErr;
 
-      // 3. Assign routes to shuttles
       if (insertedRoutes && insertedShuttles) {
         for (let i = 0; i < Math.min(insertedRoutes.length, insertedShuttles.length); i++) {
           await supabase.from('shuttles').update({ route_id: insertedRoutes[i].id }).eq('id', insertedShuttles[i].id);
         }
 
-        // 4. Create ride instances for the next 2 weeks
         const rideInstances: any[] = [];
         const today = new Date();
         for (let i = 0; i < 14; i++) {
           const date = new Date(today);
           date.setDate(today.getDate() + i);
           const dayOfWeek = date.getDay();
-          // Skip Friday (5)
           if (dayOfWeek === 5) continue;
           const dateStr = date.toISOString().split('T')[0];
 
           for (let j = 0; j < insertedRoutes.length; j++) {
             const shuttle = insertedShuttles[j % insertedShuttles.length];
-            // Morning ride
             rideInstances.push({
-              route_id: insertedRoutes[j].id,
-              shuttle_id: shuttle.id,
-              driver_id: user!.id, // admin as placeholder driver
-              ride_date: dateStr,
-              departure_time: '08:00',
-              available_seats: shuttle.capacity,
-              total_seats: shuttle.capacity,
-              status: 'scheduled',
+              route_id: insertedRoutes[j].id, shuttle_id: shuttle.id, driver_id: user!.id,
+              ride_date: dateStr, departure_time: '08:00', available_seats: shuttle.capacity,
+              total_seats: shuttle.capacity, status: 'scheduled',
             });
-            // Evening ride
             rideInstances.push({
-              route_id: insertedRoutes[j].id,
-              shuttle_id: shuttle.id,
-              driver_id: user!.id,
-              ride_date: dateStr,
-              departure_time: '17:00',
-              available_seats: shuttle.capacity,
-              total_seats: shuttle.capacity,
-              status: 'scheduled',
+              route_id: insertedRoutes[j].id, shuttle_id: shuttle.id, driver_id: user!.id,
+              ride_date: dateStr, departure_time: '17:00', available_seats: shuttle.capacity,
+              total_seats: shuttle.capacity, status: 'scheduled',
             });
           }
         }
@@ -245,6 +228,45 @@ const AdminPanel = () => {
       toast.error(err.message || 'Failed to seed data');
     }
   };
+
+  // --- Booking approval ---
+  const handleBookingApproval = async (bookingId: string, action: 'confirmed' | 'rejected') => {
+    const booking = bookings.find(b => b.id === bookingId);
+    if (!booking) return;
+
+    const { error } = await supabase.from('bookings').update({ status: action }).eq('id', bookingId);
+    if (error) { toast.error(error.message); return; }
+
+    // If rejecting, restore the seat
+    if (action === 'rejected' && booking.shuttle_id && booking.route_id) {
+      const { data: ride } = await supabase.from('ride_instances')
+        .select('id, available_seats')
+        .eq('shuttle_id', booking.shuttle_id)
+        .eq('route_id', booking.route_id)
+        .eq('ride_date', booking.scheduled_date)
+        .eq('departure_time', booking.scheduled_time)
+        .single();
+      if (ride) {
+        await supabase.from('ride_instances').update({ available_seats: ride.available_seats + 1 }).eq('id', ride.id);
+      }
+    }
+
+    toast.success(action === 'confirmed'
+      ? (lang === 'ar' ? 'تم قبول الحجز' : 'Booking approved')
+      : (lang === 'ar' ? 'تم رفض الحجز' : 'Booking rejected'));
+    fetchAllData();
+  };
+
+  // Promote waitlist passenger
+  const promoteWaitlist = async (bookingId: string) => {
+    const { error } = await supabase.from('bookings').update({ status: 'pending', waitlist_position: null }).eq('id', bookingId);
+    if (error) { toast.error(error.message); return; }
+    toast.success(lang === 'ar' ? 'تمت ترقية الراكب من قائمة الانتظار' : 'Passenger promoted from waitlist');
+    fetchAllData();
+  };
+
+  const pendingBookings = bookings.filter(b => b.status === 'pending').sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  const waitlistBookings = bookings.filter(b => b.status === 'waitlist').sort((a, b) => (a.waitlist_position || 0) - (b.waitlist_position || 0));
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
