@@ -11,7 +11,8 @@ import MapView from '@/components/MapView';
 import PlacesAutocomplete from '@/components/PlacesAutocomplete';
 import {
   MapPin, Clock, Users, ArrowRight, Search, ChevronLeft, ChevronRight,
-  Calendar, AlertCircle, Car, User as UserIcon, Loader2, CheckCircle2, XCircle
+  Calendar, AlertCircle, Car, User as UserIcon, Loader2, CheckCircle2, XCircle,
+  Navigation, Upload, Image as ImageIcon, ListOrdered
 } from 'lucide-react';
 
 const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
@@ -394,20 +395,38 @@ const BookRide = () => {
         </div>
 
         {isStartMode && (
-          <div className="flex items-center gap-2 text-sm p-3 rounded-lg bg-green-50 text-green-700">
-            <CheckCircle2 className="w-4 h-4" />
-            <div>
-              <p className="font-medium">
-                {isPickup
-                  ? (lang === 'ar' ? selectedRide?.routes?.origin_name_ar : selectedRide?.routes?.origin_name_en)
-                  : (lang === 'ar' ? selectedRide?.routes?.destination_name_ar : selectedRide?.routes?.destination_name_en)}
-              </p>
-              <p className="text-xs">
-                {isPickup
-                  ? (lang === 'ar' ? 'الباص ينتظر 5 دقائق عند نقطة الانطلاق' : 'Bus waits 5 min at starting point')
-                  : (lang === 'ar' ? 'نقطة النهاية للمسار' : 'Route end point')}
-              </p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm p-3 rounded-lg bg-green-50 text-green-700">
+              <CheckCircle2 className="w-4 h-4" />
+              <div>
+                <p className="font-medium">
+                  {isPickup
+                    ? (lang === 'ar' ? selectedRide?.routes?.origin_name_ar : selectedRide?.routes?.origin_name_en)
+                    : (lang === 'ar' ? selectedRide?.routes?.destination_name_ar : selectedRide?.routes?.destination_name_en)}
+                </p>
+                <p className="text-xs">
+                  {isPickup
+                    ? (lang === 'ar' ? 'الباص ينتظر 5 دقائق عند نقطة الانطلاق' : 'Bus waits 5 min at starting point')
+                    : (lang === 'ar' ? 'نقطة النهاية للمسار' : 'Route end point')}
+                </p>
+              </div>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+              onClick={() => {
+                const lat = isPickup ? selectedRide?.routes?.origin_lat : selectedRide?.routes?.destination_lat;
+                const lng = isPickup ? selectedRide?.routes?.origin_lng : selectedRide?.routes?.destination_lng;
+                const label = isPickup
+                  ? (lang === 'ar' ? selectedRide?.routes?.origin_name_ar : selectedRide?.routes?.origin_name_en)
+                  : (lang === 'ar' ? selectedRide?.routes?.destination_name_ar : selectedRide?.routes?.destination_name_en);
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=&travelmode=driving`, '_blank');
+              }}
+            >
+              <Navigation className="w-4 h-4" />
+              {lang === 'ar' ? 'فتح في خرائط جوجل' : 'Open in Google Maps'}
+            </Button>
           </div>
         )}
 
