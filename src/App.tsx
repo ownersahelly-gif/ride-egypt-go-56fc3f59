@@ -17,6 +17,7 @@ import Profile from "./pages/Profile.tsx";
 import DriverApply from "./pages/DriverApply.tsx";
 import DriverDashboard from "./pages/DriverDashboard.tsx";
 import TrackShuttle from "./pages/TrackShuttle.tsx";
+import ActiveRide from "./pages/ActiveRide.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
