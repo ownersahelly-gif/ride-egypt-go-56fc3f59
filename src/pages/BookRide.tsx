@@ -19,9 +19,9 @@ const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 /** Check if a point is close to the route polyline (within ~50m) */
 const isPointOnRoute = (
   point: { lat: number; lng: number },
-  routeResult: google.maps.DirectionsResult | null,
+  routeResult: any,
 ): boolean => {
-  if (!routeResult || typeof google === 'undefined') return false;
+  if (!routeResult || typeof google === 'undefined' || !google?.maps) return false;
   const path = routeResult.routes[0]?.overview_path;
   if (!path) return false;
   const pt = new google.maps.LatLng(point.lat, point.lng);
