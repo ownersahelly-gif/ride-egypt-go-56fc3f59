@@ -305,6 +305,7 @@ const AdminPanel = () => {
     cancelled: 'bg-destructive/10 text-destructive',
     boarded: 'bg-primary/10 text-primary',
     maintenance: 'bg-secondary/20 text-secondary',
+    waitlist: 'bg-amber-100 text-amber-700',
   };
 
   return (
