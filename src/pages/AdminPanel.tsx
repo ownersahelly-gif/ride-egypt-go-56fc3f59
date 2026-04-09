@@ -616,6 +616,115 @@ const AdminPanel = () => {
           </div>
         )}
 
+        {/* Approvals Tab */}
+        {tab === 'approvals' && (
+          <div className="space-y-6">
+            {/* Pending Bookings */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Clock className="w-5 h-5 text-secondary" />
+                {lang === 'ar' ? `حجوزات في انتظار الموافقة (${pendingBookings.length})` : `Pending Approval (${pendingBookings.length})`}
+              </h2>
+              {pendingBookings.length === 0 ? (
+                <div className="bg-card border border-border rounded-xl p-8 text-center text-muted-foreground">
+                  {lang === 'ar' ? 'لا توجد حجوزات معلقة' : 'No pending bookings'}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingBookings.map((b, idx) => (
+                    <div key={b.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono">#{idx + 1}</span>
+                            <p className="font-semibold text-foreground">{b.profile?.full_name || 'Unknown'}</p>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{b.profile?.phone || 'No phone'}</p>
+                          <p className="text-sm font-medium text-foreground">{lang === 'ar' ? b.routes?.name_ar : b.routes?.name_en}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {b.scheduled_date} · {b.scheduled_time?.slice(0, 5)} · {b.seats} {lang === 'ar' ? 'مقعد' : 'seat(s)'} · {b.total_price} EGP
+                          </p>
+                          {b.custom_pickup_name && (
+                            <p className="text-xs text-muted-foreground">
+                              📍 {lang === 'ar' ? 'الركوب' : 'Pickup'}: {b.custom_pickup_name}
+                            </p>
+                          )}
+                          {b.custom_dropoff_name && (
+                            <p className="text-xs text-muted-foreground">
+                              📍 {lang === 'ar' ? 'النزول' : 'Dropoff'}: {b.custom_dropoff_name}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {lang === 'ar' ? 'الطلب' : 'Requested'}: {new Date(b.created_at).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}
+                          </p>
+                        </div>
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusColors[b.status]}`}>{b.status}</span>
+                      </div>
+
+                      {/* Payment Proof */}
+                      {b.payment_proof_url ? (
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-muted-foreground">
+                            {lang === 'ar' ? 'إثبات الدفع InstaPay:' : 'InstaPay Payment Proof:'}
+                          </p>
+                          <a href={b.payment_proof_url} target="_blank" rel="noopener noreferrer">
+                            <img src={b.payment_proof_url} alt="Payment proof" className="w-full max-w-xs h-48 object-contain rounded-lg border border-border bg-muted cursor-pointer hover:opacity-80 transition-opacity" />
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-destructive">{lang === 'ar' ? 'لم يتم إرفاق إثبات دفع' : 'No payment proof attached'}</p>
+                      )}
+
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => handleBookingApproval(b.id, 'confirmed')}>
+                          <CheckCircle2 className="w-3.5 h-3.5 me-1" />{lang === 'ar' ? 'قبول' : 'Approve'}
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleBookingApproval(b.id, 'rejected')}>
+                          <XCircle className="w-3.5 h-3.5 me-1" />{lang === 'ar' ? 'رفض' : 'Reject'}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Waitlist */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Users className="w-5 h-5 text-muted-foreground" />
+                {lang === 'ar' ? `قائمة الانتظار (${waitlistBookings.length})` : `Waitlist (${waitlistBookings.length})`}
+              </h2>
+              {waitlistBookings.length === 0 ? (
+                <div className="bg-card border border-border rounded-xl p-8 text-center text-muted-foreground">
+                  {lang === 'ar' ? 'لا أحد في قائمة الانتظار' : 'No one on the waitlist'}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {waitlistBookings.map(b => (
+                    <div key={b.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs bg-secondary/20 text-secondary px-2 py-0.5 rounded-full font-mono">
+                            #{b.waitlist_position}
+                          </span>
+                          <p className="font-medium text-foreground text-sm">{b.profile?.full_name || 'Unknown'}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {lang === 'ar' ? b.routes?.name_ar : b.routes?.name_en} · {b.scheduled_date} · {b.scheduled_time?.slice(0, 5)}
+                        </p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => promoteWaitlist(b.id)}>
+                        {lang === 'ar' ? 'ترقية' : 'Promote'}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Bookings Tab */}
         {tab === 'bookings' && (
           <div className="space-y-4">
@@ -629,7 +738,7 @@ const AdminPanel = () => {
                 {bookings.map(b => (
                   <div key={b.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-foreground text-sm">{lang === 'ar' ? b.routes?.name_ar : b.routes?.name_en}</p>
+                      <p className="font-medium text-foreground text-sm">{b.profile?.full_name || 'Unknown'} — {lang === 'ar' ? b.routes?.name_ar : b.routes?.name_en}</p>
                       <p className="text-xs text-muted-foreground">{b.scheduled_date} · {b.scheduled_time} · {b.seats} seat(s) · {b.total_price} EGP</p>
                       {b.boarding_code && <p className="text-xs text-muted-foreground font-mono">Code: {b.boarding_code}</p>}
                     </div>
