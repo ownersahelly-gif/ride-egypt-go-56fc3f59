@@ -46,7 +46,7 @@ const ActiveRide = () => {
       const today = new Date().toISOString().split('T')[0];
       const { data: bookingsData } = await supabase
         .from('bookings')
-        .select('*, stops!bookings_pickup_stop_id_fkey(name_en, name_ar, lat, lng), dropoff:stops!bookings_dropoff_stop_id_fkey(name_en, name_ar, lat, lng)')
+        .select('*, stops!bookings_pickup_stop_id_fkey(name_en, name_ar, lat, lng, stop_order), dropoff:stops!bookings_dropoff_stop_id_fkey(name_en, name_ar, lat, lng, stop_order)')
         .eq('shuttle_id', shuttleData.id)
         .eq('scheduled_date', today)
         .in('status', ['confirmed', 'boarded']);
