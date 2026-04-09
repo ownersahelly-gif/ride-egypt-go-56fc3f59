@@ -106,7 +106,7 @@ const BookRide = () => {
   const [shuttleInfo, setShuttleInfo] = useState<any>(null);
 
   // Route directions result for on-route checking
-  const [routeDirections, setRouteDirections] = useState<google.maps.DirectionsResult | null>(null);
+  const [routeDirections, setRouteDirections] = useState<any>(null);
 
   const getDateOptions = () => {
     const options: { label: string; date: string }[] = [];
