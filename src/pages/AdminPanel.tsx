@@ -26,6 +26,10 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // InstaPay settings
+  const [instapayPhone, setInstapayPhone] = useState('');
+  const [savingPhone, setSavingPhone] = useState(false);
+
   // Data states
   const [routes, setRoutes] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
