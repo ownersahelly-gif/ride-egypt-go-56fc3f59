@@ -46,17 +46,7 @@ const MapView = ({
 
   const onLoad = useCallback((map: google.maps.Map) => {
     setMapRef(map);
-    if (showDirections && origin && destination) {
-      const directionsService = new google.maps.DirectionsService();
-      directionsService.route({
-        origin,
-        destination,
-        travelMode: google.maps.TravelMode.DRIVING,
-      }, (result, status) => {
-        if (status === 'OK' && result) setDirections(result);
-      });
-    }
-  }, [origin, destination, showDirections]);
+  }, []);
 
   useEffect(() => {
     if (!isLoaded || !showDirections || !origin || !destination) {
@@ -64,14 +54,20 @@ const MapView = ({
       return;
     }
     const directionsService = new google.maps.DirectionsService();
+    const waypointsList = waypoints.map(wp => ({
+      location: new google.maps.LatLng(wp.lat, wp.lng),
+      stopover: true,
+    }));
     directionsService.route({
       origin,
       destination,
+      waypoints: waypointsList.length > 0 ? waypointsList : undefined,
+      optimizeWaypoints: true,
       travelMode: google.maps.TravelMode.DRIVING,
     }, (result, status) => {
       if (status === 'OK' && result) setDirections(result);
     });
-  }, [isLoaded, origin?.lat, origin?.lng, destination?.lat, destination?.lng, showDirections]);
+  }, [isLoaded, origin?.lat, origin?.lng, destination?.lat, destination?.lng, showDirections, JSON.stringify(waypoints)]);
 
   const locateUser = () => {
     if (!navigator.geolocation) return;
