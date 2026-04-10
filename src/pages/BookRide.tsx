@@ -909,7 +909,7 @@ const BookRide = () => {
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-surface rounded-xl p-3 text-center">
-                  <p className="text-xl font-bold text-primary">{selectedRide.routes?.price} EGP</p>
+                  <p className="text-xl font-bold text-primary">{dynamicPrice} EGP</p>
                   <p className="text-xs text-muted-foreground">{lang === 'ar' ? 'للراكب' : 'per person'}</p>
                 </div>
                 <div className="bg-surface rounded-xl p-3 text-center">
@@ -1001,7 +1001,7 @@ const BookRide = () => {
                   { value: 'return' as const, labelAr: 'عودة فقط', labelEn: 'Return Only', priceMultiplier: 1 },
                   { value: 'both' as const, labelAr: 'ذهاب وعودة', labelEn: 'Round Trip', priceMultiplier: 2 },
                 ]).map(opt => {
-                  const basePrice = selectedRide.routes?.price || 0;
+                  const basePrice = dynamicPrice;
                   return (
                     <button key={opt.value} onClick={() => setTripDirection(opt.value)}
                       className={`px-2 py-3 rounded-xl text-center border-2 transition-colors ${
@@ -1127,7 +1127,7 @@ const BookRide = () => {
                 </h3>
                 <div className="bg-surface rounded-xl p-4 text-sm text-muted-foreground space-y-2">
                   <p>{lang === 'ar' ? 'حوّل المبلغ عبر InstaPay ثم ارفع لقطة شاشة للتحويل:' : 'Transfer the amount via InstaPay then upload a screenshot:'}</p>
-                  <p className="font-bold text-foreground text-lg">{tripDirection === 'both' ? (selectedRide.routes?.price || 0) * 2 : selectedRide.routes?.price} EGP</p>
+                  <p className="font-bold text-foreground text-lg">{tripDirection === 'both' ? dynamicPrice * 2 : dynamicPrice} EGP</p>
                   {tripDirection === 'both' && <p className="text-xs text-muted-foreground">{lang === 'ar' ? '(ذهاب + عودة)' : '(Going + Return)'}</p>}
                   {instapayPhone && (
                     <div className="flex items-center gap-2 bg-card border border-border rounded-lg p-3 mt-2">
@@ -1180,15 +1180,15 @@ const BookRide = () => {
                 </span>
                 {useBundle ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground line-through">{tripDirection === 'both' ? (selectedRide.routes?.price || 0) * 2 : selectedRide.routes?.price} EGP</span>
+                    <span className="text-sm text-muted-foreground line-through">{tripDirection === 'both' ? dynamicPrice * 2 : dynamicPrice} EGP</span>
                     <span className="text-lg font-bold text-secondary">{lang === 'ar' ? 'من الباقة' : 'Bundle'}</span>
                   </div>
                 ) : (
-                  <span className="text-lg font-bold text-primary">{tripDirection === 'both' ? (selectedRide.routes?.price || 0) * 2 : selectedRide.routes?.price} EGP</span>
+                  <span className="text-lg font-bold text-primary">{tripDirection === 'both' ? dynamicPrice * 2 : dynamicPrice} EGP</span>
                 )}
               </div>
               {tripDirection === 'both' && !useBundle && (
-                <p className="text-[10px] text-muted-foreground mb-2">{lang === 'ar' ? `${selectedRide.routes?.price} × 2 رحلة` : `${selectedRide.routes?.price} × 2 trips`}</p>
+                <p className="text-[10px] text-muted-foreground mb-2">{lang === 'ar' ? `${dynamicPrice} × 2 رحلة` : `${dynamicPrice} × 2 trips`}</p>
               )}
 
               {!isRideFull ? (
