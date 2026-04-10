@@ -1139,17 +1139,22 @@ const BookRide = () => {
 
             {/* Summary & Book */}
             <div className="bg-card border border-border rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">{lang === 'ar' ? 'مقعد واحد' : '1 Seat'}</span>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-muted-foreground">
+                  {tripDirection === 'both' ? (lang === 'ar' ? 'ذهاب وعودة' : 'Round Trip') : tripDirection === 'go' ? (lang === 'ar' ? 'ذهاب فقط' : 'Going Only') : (lang === 'ar' ? 'عودة فقط' : 'Return Only')}
+                </span>
                 {useBundle ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground line-through">{selectedRide.routes?.price} EGP</span>
+                    <span className="text-sm text-muted-foreground line-through">{tripDirection === 'both' ? (selectedRide.routes?.price || 0) * 2 : selectedRide.routes?.price} EGP</span>
                     <span className="text-lg font-bold text-secondary">{lang === 'ar' ? 'من الباقة' : 'Bundle'}</span>
                   </div>
                 ) : (
-                  <span className="text-lg font-bold text-primary">{selectedRide.routes?.price} EGP</span>
+                  <span className="text-lg font-bold text-primary">{tripDirection === 'both' ? (selectedRide.routes?.price || 0) * 2 : selectedRide.routes?.price} EGP</span>
                 )}
               </div>
+              {tripDirection === 'both' && !useBundle && (
+                <p className="text-[10px] text-muted-foreground mb-2">{lang === 'ar' ? `${selectedRide.routes?.price} × 2 رحلة` : `${selectedRide.routes?.price} × 2 trips`}</p>
+              )}
 
               {!isRideFull ? (
                 <Button className="w-full mt-3" size="lg" onClick={() => handleBook(false)}
