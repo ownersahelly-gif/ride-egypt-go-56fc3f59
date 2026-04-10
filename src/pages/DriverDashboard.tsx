@@ -60,6 +60,10 @@ const DriverDashboard = () => {
   });
   const [savingRouteRequest, setSavingRouteRequest] = useState(false);
   const [pickingLocation, setPickingLocation] = useState<'origin' | 'destination' | null>(null);
+  const [quickAddDay, setQuickAddDay] = useState<{ routeId: string; day: number; shuttleId: string } | null>(null);
+  const [quickAddTime, setQuickAddTime] = useState('12:00');
+  const [quickAddDir, setQuickAddDir] = useState<'go' | 'return'>('go');
+  const [savingQuickAdd, setSavingQuickAdd] = useState(false);
 
   const { newBookingsCount, acknowledge: ackBookings } = useDriverBookingNotifications(shuttle?.id || null);
 
@@ -289,6 +293,27 @@ const DriverDashboard = () => {
     setSavingRouteRequest(false);
   };
 
+  const quickAddTimeSlot = async () => {
+    if (!user || !shuttle || !quickAddDay) return;
+    setSavingQuickAdd(true);
+    const entry = {
+      driver_id: user.id, route_id: quickAddDay.routeId, shuttle_id: quickAddDay.shuttleId,
+      day_of_week: quickAddDay.day,
+      departure_time: quickAddDir === 'go' ? quickAddTime : quickAddTime,
+      return_time: null,
+      is_recurring: true, is_active: true, min_passengers: 5,
+    };
+    const { error } = await supabase.from('driver_schedules').insert(entry);
+    if (error) toast({ title: t('auth.error'), description: error.message, variant: 'destructive' });
+    else {
+      toast({ title: lang === 'ar' ? 'تمت إضافة الوقت!' : 'Time slot added!' });
+      await generateRideInstances([entry]);
+      const { data } = await supabase.from('driver_schedules').select('*, routes(name_en, name_ar, price, origin_name_en, origin_name_ar, destination_name_en, destination_name_ar, estimated_duration_minutes, origin_lat, origin_lng, destination_lat, destination_lng)').eq('driver_id', user.id).order('day_of_week');
+      setDriverSchedules(data || []);
+    }
+    setQuickAddDay(null);
+    setSavingQuickAdd(false);
+  };
   const handleMapClick = (lat: number, lng: number) => {
     if (!pickingLocation) return;
     if (pickingLocation === 'origin') setRouteRequestForm(p => ({ ...p, origin_lat: lat, origin_lng: lng, origin_name: p.origin_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}` }));
@@ -371,19 +396,6 @@ const DriverDashboard = () => {
             {/* ==================== HOME TAB ==================== */}
             {tab === 'home' && (
               <div className="space-y-4">
-                {/* Start Ride — THE main action */}
-                {todayBookings.length > 0 && shuttle.status === 'active' && (
-                  <Link to="/active-ride">
-                    <Button className="w-full h-16 text-lg rounded-2xl" size="lg">
-                      <Play className="w-6 h-6 me-2" />
-                      {lang === 'ar' ? 'ابدأ رحلة اليوم' : "Start Today's Ride"}
-                      <span className="ms-2 bg-primary-foreground/20 px-2 py-0.5 rounded-full text-sm">
-                        {todayBookings.length} {lang === 'ar' ? 'راكب' : 'riders'}
-                      </span>
-                    </Button>
-                  </Link>
-                )}
-
                 {/* Online/Offline toggle */}
                 <div className="bg-card border border-border rounded-2xl p-4">
                   <div className="flex items-center justify-between">
@@ -408,6 +420,120 @@ const DriverDashboard = () => {
                     </Button>
                   </div>
                 </div>
+
+                {/* Next Trip / How it works card */}
+                {driverSchedules.length > 0 && (() => {
+                  // Find the next upcoming trip
+                  const now = new Date();
+                  const todayStr = now.toISOString().split('T')[0];
+                  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                  const todayDow = now.getDay();
+                  
+                  // Find next scheduled trip (today's remaining or next day)
+                  const allSchedulesSorted = [...driverSchedules].sort((a, b) => {
+                    if (a.day_of_week !== b.day_of_week) return a.day_of_week - b.day_of_week;
+                    return (a.departure_time || '').localeCompare(b.departure_time || '');
+                  });
+                  
+                  let nextTrip: any = null;
+                  let nextTripDate = '';
+                  let nextTripLabel = '';
+                  
+                  // Check today's remaining trips
+                  for (const s of allSchedulesSorted) {
+                    if (s.day_of_week === todayDow && s.departure_time?.slice(0, 5) > currentTime) {
+                      nextTrip = s;
+                      nextTripDate = todayStr;
+                      nextTripLabel = lang === 'ar' ? 'اليوم' : 'Today';
+                      break;
+                    }
+                  }
+                  // If no today trip, find next day
+                  if (!nextTrip) {
+                    for (let offset = 1; offset <= 7; offset++) {
+                      const checkDow = (todayDow + offset) % 7;
+                      const match = allSchedulesSorted.find(s => s.day_of_week === checkDow);
+                      if (match) {
+                        nextTrip = match;
+                        const futureDate = new Date(now);
+                        futureDate.setDate(now.getDate() + offset);
+                        nextTripDate = futureDate.toISOString().split('T')[0];
+                        nextTripLabel = offset === 1 ? (lang === 'ar' ? 'غداً' : 'Tomorrow') : dayNames[checkDow];
+                        break;
+                      }
+                    }
+                  }
+                  
+                  const nextTripBookings = nextTrip ? bookings.filter(b => {
+                    const bDow = new Date(b.scheduled_date).getDay();
+                    return b.route_id === nextTrip.route_id && bDow === nextTrip.day_of_week && b.status !== 'cancelled';
+                  }) : [];
+                  const nextGoCount = nextTripBookings.filter(b => b.trip_direction === 'go' || b.trip_direction === 'both').length;
+                  const nextReturnCount = nextTripBookings.filter(b => b.trip_direction === 'return' || b.trip_direction === 'both').length;
+                  
+                  if (!nextTrip) return null;
+                  const nextRouteInfo = nextTrip.routes;
+                  
+                  return (
+                    <div className="bg-card border-2 border-primary/30 rounded-2xl p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Play className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-primary font-medium">{lang === 'ar' ? 'الرحلة القادمة' : 'Next Trip'} · {nextTripLabel}</p>
+                            <p className="font-semibold text-foreground">{lang === 'ar' ? nextRouteInfo?.name_ar : nextRouteInfo?.name_en}</p>
+                          </div>
+                        </div>
+                        <div className="text-end">
+                          <p className="text-lg font-bold text-foreground">{nextTrip.departure_time?.slice(0, 5)}</p>
+                          {nextTrip.return_time && <p className="text-[10px] text-muted-foreground">{lang === 'ar' ? 'عودة' : 'Back'} {nextTrip.return_time?.slice(0, 5)}</p>}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">{lang === 'ar' ? `ذهاب ${nextGoCount}` : `Go ${nextGoCount}`}</span>
+                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">{lang === 'ar' ? `عودة ${nextReturnCount}` : `Back ${nextReturnCount}`}</span>
+                        <span className="text-muted-foreground">{nextTripBookings.length} {lang === 'ar' ? 'راكب' : 'total'}</span>
+                      </div>
+
+                      {nextTripLabel === (lang === 'ar' ? 'اليوم' : 'Today') && todayBookings.length > 0 && shuttle.status === 'active' && (
+                        <Link to="/active-ride">
+                          <Button className="w-full h-12 text-base rounded-xl" size="lg">
+                            <Play className="w-5 h-5 me-2" />
+                            {lang === 'ar' ? 'ابدأ الرحلة الآن' : 'Start This Trip'}
+                          </Button>
+                        </Link>
+                      )}
+                      
+                      {shuttle.status !== 'active' && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                          <p className="text-xs text-amber-700">
+                            {lang === 'ar' ? 'أنت غير متصل. شغّل الاتصال أعلاه حتى يتمكن الركاب من الحجز وتستطيع بدء الرحلة.' : 'You\'re offline. Go online above so riders can book and you can start trips.'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* How it works — show once when no bookings */}
+                {driverSchedules.length > 0 && todayBookings.length === 0 && (
+                  <div className="bg-card border border-border rounded-2xl p-4">
+                    <h4 className="font-semibold text-foreground text-sm mb-2 flex items-center gap-2">
+                      <Info className="w-4 h-4 text-primary" />
+                      {lang === 'ar' ? 'كيف تعمل الرحلات؟' : 'How trips work'}
+                    </h4>
+                    <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
+                      <li>{lang === 'ar' ? 'شغّل الاتصال (Go Online) حتى يرى الركاب رحلاتك' : 'Go Online so riders can see your trips'}</li>
+                      <li>{lang === 'ar' ? 'الركاب يحجزون رحلات الذهاب أو العودة أو الاثنين' : 'Riders book going, return, or round trips'}</li>
+                      <li>{lang === 'ar' ? 'عندما يحين وقت الرحلة، اضغط "ابدأ الرحلة"' : 'When it\'s trip time, tap "Start This Trip"'}</li>
+                      <li>{lang === 'ar' ? 'تابع الركاب وأكّد الصعود والنزول' : 'Track riders, confirm boarding and drop-off'}</li>
+                    </ol>
+                  </div>
+                )}
 
                 {/* Earnings summary */}
                 <div className="grid grid-cols-2 gap-3">
@@ -522,27 +648,51 @@ const DriverDashboard = () => {
                                 </div>
                               </div>
                             )}
-                            {/* Per-day passenger breakdown with go/return counts */}
+                             {/* Per-day passenger breakdown with go/return counts */}
                             <div className="space-y-1.5">
                               {(schedules as any[]).sort((a: any, b: any) => a.day_of_week - b.day_of_week).map((s: any) => {
                                 const dayBookings = bookingsByDay[s.day_of_week] || [];
                                 const goCount = dayBookings.filter((b: any) => b.trip_direction === 'go' || b.trip_direction === 'both').length;
                                 const returnCount = dayBookings.filter((b: any) => b.trip_direction === 'return' || b.trip_direction === 'both').length;
+                                const isQuickAdding = quickAddDay?.routeId === routeId && quickAddDay?.day === s.day_of_week;
                                 return (
-                                  <div key={s.id} className="flex items-center justify-between bg-surface rounded-lg px-3 py-2">
-                                    <div className="flex items-center gap-2 text-sm">
-                                      <span className="font-medium text-foreground w-16">{dayNames[s.day_of_week]}</span>
-                                      {s.departure_time && <><Clock className="w-3.5 h-3.5 text-muted-foreground" /><span className="text-muted-foreground">{s.departure_time?.slice(0, 5)}</span></>}
-                                      {s.return_time && <><ArrowRight className="w-3 h-3 text-muted-foreground" /><span className="text-muted-foreground">{s.return_time?.slice(0, 5)}</span></>}
+                                  <div key={s.id}>
+                                    <div className="flex items-center justify-between bg-surface rounded-lg px-3 py-2">
+                                      <div className="flex items-center gap-2 text-sm">
+                                        <span className="font-medium text-foreground w-16">{dayNames[s.day_of_week]}</span>
+                                        {s.departure_time && <><Clock className="w-3.5 h-3.5 text-muted-foreground" /><span className="text-muted-foreground">{s.departure_time?.slice(0, 5)}</span></>}
+                                        {s.return_time && <><ArrowRight className="w-3 h-3 text-muted-foreground" /><span className="text-muted-foreground">{s.return_time?.slice(0, 5)}</span></>}
+                                      </div>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">
+                                          {lang === 'ar' ? `ذهاب ${goCount}` : `Go ${goCount}`}
+                                        </span>
+                                        <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                                          {lang === 'ar' ? `عودة ${returnCount}` : `Back ${returnCount}`}
+                                        </span>
+                                        <button
+                                          onClick={() => isQuickAdding ? setQuickAddDay(null) : setQuickAddDay({ routeId, day: s.day_of_week, shuttleId: shuttle.id })}
+                                          className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors"
+                                          title={lang === 'ar' ? 'إضافة وقت' : 'Add time'}
+                                        >
+                                          <Plus className="w-3 h-3" />
+                                        </button>
+                                      </div>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">
-                                        {lang === 'ar' ? `ذهاب ${goCount}` : `Go ${goCount}`}
-                                      </span>
-                                      <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
-                                        {lang === 'ar' ? `عودة ${returnCount}` : `Back ${returnCount}`}
-                                      </span>
-                                    </div>
+                                    {/* Quick add inline form */}
+                                    {isQuickAdding && (
+                                      <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 rounded-lg mt-1">
+                                        <select value={quickAddDir} onChange={e => setQuickAddDir(e.target.value as 'go' | 'return')}
+                                          className="h-8 rounded-md border border-input bg-background px-2 text-xs">
+                                          <option value="go">{lang === 'ar' ? 'ذهاب' : 'Go'}</option>
+                                          <option value="return">{lang === 'ar' ? 'عودة' : 'Back'}</option>
+                                        </select>
+                                        <Input type="time" value={quickAddTime} onChange={e => setQuickAddTime(e.target.value)} className="h-8 w-24 text-xs" />
+                                        <Button size="sm" className="h-8 text-xs px-3" onClick={quickAddTimeSlot} disabled={savingQuickAdd}>
+                                          {savingQuickAdd ? <Loader2 className="w-3 h-3 animate-spin" /> : (lang === 'ar' ? 'إضافة' : 'Add')}
+                                        </Button>
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               })}
