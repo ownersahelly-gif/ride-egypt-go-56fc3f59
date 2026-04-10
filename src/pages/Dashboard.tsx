@@ -728,7 +728,7 @@ const Dashboard = () => {
         )}
 
         {step === 'results' && (
-          <div className="pointer-events-auto bg-card/95 backdrop-blur-md rounded-3xl shadow-2xl border border-border p-5 space-y-3 max-w-lg mx-auto max-h-[50vh] overflow-y-auto">
+          <div className="p-4 space-y-3">
             <h2 className="text-lg font-bold text-foreground">
               {lang === 'ar' ? 'الرحلات المتاحة' : 'Available Rides'}
             </h2>
