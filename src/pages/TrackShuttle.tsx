@@ -322,8 +322,8 @@ const TrackShuttle = () => {
 
   const markers: { lat: number; lng: number; label?: string; color?: 'red' | 'green' | 'blue' | 'orange' | 'purple' }[] = [];
 
-  // Shuttle marker
-  if (shuttle?.current_lat && shuttle?.current_lng) {
+  // Shuttle marker — only show if trip has started
+  if (hasLiveGps) {
     markers.push({ lat: shuttle.current_lat, lng: shuttle.current_lng, label: '🚐', color: 'blue' });
   }
 
@@ -337,8 +337,8 @@ const TrackShuttle = () => {
     markers.push({ lat: myPickupLat, lng: myPickupLng, label: lang === 'ar' ? 'أنت' : 'YOU', color: 'purple' });
   }
 
-  // Directions: shuttle → (intermediate stops) → user's pickup
-  const trackOrigin = (shuttle?.current_lat && shuttle?.current_lng)
+  // Directions: shuttle → (intermediate stops) → user's pickup (only when live)
+  const trackOrigin = hasLiveGps
     ? { lat: shuttle.current_lat, lng: shuttle.current_lng } : undefined;
   const trackDestination = (myPickupLat && myPickupLng)
     ? { lat: myPickupLat, lng: myPickupLng } : undefined;
@@ -417,7 +417,7 @@ const TrackShuttle = () => {
 
 
       <div className="relative" style={{ height: '45vh', minHeight: '280px' }}>
-        {(!shuttle?.current_lat || !shuttle?.current_lng) && !loading ? (
+        {!hasLiveGps && !loading ? (
           <div className="h-full bg-muted flex flex-col items-center justify-center text-center p-6">
             <Car className="w-16 h-16 text-muted-foreground/40 mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-1">
@@ -437,7 +437,7 @@ const TrackShuttle = () => {
             destination={trackDestination}
             waypoints={trackWaypoints}
             showDirections={!!trackOrigin && !!trackDestination}
-            center={shuttle?.current_lat ? { lat: shuttle.current_lat, lng: shuttle.current_lng } : undefined}
+            center={hasLiveGps ? { lat: shuttle.current_lat, lng: shuttle.current_lng } : undefined}
             zoom={14}
             showUserLocation={false}
           />
