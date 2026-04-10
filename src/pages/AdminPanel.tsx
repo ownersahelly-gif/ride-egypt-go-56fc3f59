@@ -349,12 +349,22 @@ const AdminPanel = () => {
   const tabs: { key: AdminTab; icon: any; label: string }[] = [
     { key: 'analytics', icon: BarChart3, label: lang === 'ar' ? 'التحليلات' : 'Analytics' },
     { key: 'approvals', icon: CheckCircle2, label: lang === 'ar' ? 'الموافقات' : 'Approvals' },
+    { key: 'carpool', icon: Car, label: lang === 'ar' ? 'مشاركة الرحلات' : 'Carpool' },
     { key: 'routes', icon: Route, label: lang === 'ar' ? 'المسارات' : 'Routes' },
     { key: 'drivers', icon: Users, label: lang === 'ar' ? 'السائقين' : 'Drivers' },
     { key: 'shuttles', icon: Car, label: lang === 'ar' ? 'الشاتلات' : 'Shuttles' },
     { key: 'bookings', icon: Ticket, label: lang === 'ar' ? 'الحجوزات' : 'Bookings' },
     { key: 'settings', icon: Settings, label: lang === 'ar' ? 'الإعدادات' : 'Settings' },
   ];
+
+  const handleCarpoolVerification = async (verificationId: string, status: 'approved' | 'rejected', adminNotes?: string) => {
+    const { error } = await supabase.from('carpool_verifications').update({ status, admin_notes: adminNotes || null }).eq('id', verificationId);
+    if (error) { toast.error(error.message); return; }
+    toast.success(status === 'approved'
+      ? (lang === 'ar' ? 'تم قبول التحقق' : 'Verification approved')
+      : (lang === 'ar' ? 'تم رفض التحقق' : 'Verification rejected'));
+    fetchAllData();
+  };
 
   const statusColors: Record<string, string> = {
     active: 'bg-green-100 text-green-700',
