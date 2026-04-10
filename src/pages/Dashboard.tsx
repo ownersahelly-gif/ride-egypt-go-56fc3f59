@@ -767,19 +767,39 @@ const Dashboard = () => {
           </Link>
         </div>
         <div className="flex items-center gap-2">
-          {isAdmin && (
-            <Link to="/admin">
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Shield className="w-4 h-4" />
+          {user ? (
+            <>
+              {isAdmin && (
+                <Link to="/admin">
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <Shield className="w-4 h-4" />
+                  </Button>
+                </Link>
+              )}
+              <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="rounded-full p-2 hover:bg-muted transition-colors">
+                <Globe className="w-4 h-4" />
+              </button>
+              <Button variant="ghost" size="icon" className="rounded-full" onClick={handleSignOut}>
+                <LogOut className="w-4 h-4" />
               </Button>
-            </Link>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="rounded-full p-2 hover:bg-muted transition-colors">
+                <Globe className="w-4 h-4" />
+              </button>
+              <Link to="/login">
+                <Button variant="ghost" size="sm">
+                  {lang === 'ar' ? 'تسجيل الدخول' : 'Log in'}
+                </Button>
+              </Link>
+              <Link to="/signup">
+                <Button size="sm">
+                  {lang === 'ar' ? 'إنشاء حساب' : 'Sign up'}
+                </Button>
+              </Link>
+            </>
           )}
-          <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="rounded-full p-2 hover:bg-muted transition-colors">
-            <Globe className="w-4 h-4" />
-          </button>
-          <Button variant="ghost" size="icon" className="rounded-full" onClick={handleSignOut}>
-            <LogOut className="w-4 h-4" />
-          </Button>
         </div>
       </header>
 
