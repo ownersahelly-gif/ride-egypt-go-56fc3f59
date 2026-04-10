@@ -406,7 +406,7 @@ const BookRide = () => {
         ? (lang === 'ar' ? selectedRide.routes.destination_name_ar : selectedRide.routes.destination_name_en)
         : customDropoff?.name;
 
-      const basePrice = selectedRide.routes?.price || 0;
+      const basePrice = dynamicPrice;
       const totalPrice = usingBundle ? 0 : (tripDirection === 'both' ? basePrice * 2 : basePrice);
 
       const bookingData: any = {
