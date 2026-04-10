@@ -186,15 +186,44 @@ const DriverDashboard = () => {
   };
 
   const saveSchedule = async () => {
-    if (!user || !shuttle || !scheduleForm.route_id || scheduleForm.days.length === 0) return;
+    if (!user || !shuttle || !scheduleForm.route_id || scheduleForm.days.length === 0 || scheduleForm.timeSlots.length === 0) return;
     setSavingSchedule(true);
-    const departureEntries = scheduleForm.days.map(day => ({
-      driver_id: user.id, route_id: scheduleForm.route_id, shuttle_id: shuttle.id,
-      day_of_week: day,
-      departure_time: scheduleForm.trip_direction === 'return' ? scheduleForm.return_time : scheduleForm.departure_time,
-      is_recurring: scheduleForm.is_recurring, is_active: true, min_passengers: scheduleForm.min_passengers,
-      return_time: scheduleForm.trip_direction === 'go' ? null : (scheduleForm.trip_direction === 'return' ? null : scheduleForm.return_time),
-    }));
+    // Create one schedule entry per day per time slot
+    const goSlots = scheduleForm.timeSlots.filter(s => s.direction === 'go');
+    const returnSlots = scheduleForm.timeSlots.filter(s => s.direction === 'return');
+    // Pair go and return slots, or create individual entries
+    const departureEntries: any[] = [];
+    scheduleForm.days.forEach(day => {
+      if (goSlots.length > 0 && returnSlots.length > 0) {
+        // Pair them: first go with first return, etc.
+        const maxPairs = Math.max(goSlots.length, returnSlots.length);
+        for (let i = 0; i < maxPairs; i++) {
+          departureEntries.push({
+            driver_id: user.id, route_id: scheduleForm.route_id, shuttle_id: shuttle.id,
+            day_of_week: day,
+            departure_time: goSlots[i]?.time || goSlots[0].time,
+            return_time: returnSlots[i]?.time || returnSlots[0].time,
+            is_recurring: scheduleForm.is_recurring, is_active: true, min_passengers: scheduleForm.min_passengers,
+          });
+        }
+      } else if (goSlots.length > 0) {
+        goSlots.forEach(slot => {
+          departureEntries.push({
+            driver_id: user.id, route_id: scheduleForm.route_id, shuttle_id: shuttle.id,
+            day_of_week: day, departure_time: slot.time, return_time: null,
+            is_recurring: scheduleForm.is_recurring, is_active: true, min_passengers: scheduleForm.min_passengers,
+          });
+        });
+      } else {
+        returnSlots.forEach(slot => {
+          departureEntries.push({
+            driver_id: user.id, route_id: scheduleForm.route_id, shuttle_id: shuttle.id,
+            day_of_week: day, departure_time: slot.time, return_time: null,
+            is_recurring: scheduleForm.is_recurring, is_active: true, min_passengers: scheduleForm.min_passengers,
+          });
+        });
+      }
+    });
     const { error } = await supabase.from('driver_schedules').insert(departureEntries);
     if (error) toast({ title: t('auth.error'), description: error.message, variant: 'destructive' });
     else {
@@ -204,7 +233,7 @@ const DriverDashboard = () => {
       setDriverSchedules(data || []);
       setShowScheduleForm(false);
       setSelectedRouteForSchedule(null);
-      setScheduleForm({ route_id: '', days: [], departure_time: '08:00', return_time: '17:00', is_recurring: true, min_passengers: 5, trip_direction: 'both' });
+      setScheduleForm({ route_id: '', days: [], timeSlots: [{ direction: 'go', time: '08:00' }, { direction: 'return', time: '17:00' }], is_recurring: true, min_passengers: 5 });
       setTab('home');
     }
     setSavingSchedule(false);
