@@ -1092,7 +1092,8 @@ const BookRide = () => {
                 </h3>
                 <div className="bg-surface rounded-xl p-4 text-sm text-muted-foreground space-y-2">
                   <p>{lang === 'ar' ? 'حوّل المبلغ عبر InstaPay ثم ارفع لقطة شاشة للتحويل:' : 'Transfer the amount via InstaPay then upload a screenshot:'}</p>
-                  <p className="font-bold text-foreground text-lg">{selectedRide.routes?.price} EGP</p>
+                  <p className="font-bold text-foreground text-lg">{tripDirection === 'both' ? (selectedRide.routes?.price || 0) * 2 : selectedRide.routes?.price} EGP</p>
+                  {tripDirection === 'both' && <p className="text-xs text-muted-foreground">{lang === 'ar' ? '(ذهاب + عودة)' : '(Going + Return)'}</p>}
                   {instapayPhone && (
                     <div className="flex items-center gap-2 bg-card border border-border rounded-lg p-3 mt-2">
                       <Phone className="w-5 h-5 text-primary shrink-0" />
