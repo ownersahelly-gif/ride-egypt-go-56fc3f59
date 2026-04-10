@@ -206,50 +206,76 @@ const TrackShuttle = () => {
     setPassengerStops(stops);
   }, [route, rideBookings, user, lang]);
 
-  // Calculate ETA using Google Maps Directions
+  // Calculate ETA — consider whether the trip has started or not
   useEffect(() => {
-    if (!shuttle?.current_lat || !shuttle?.current_lng || !booking || !route) return;
-    if (typeof google === 'undefined' || !google?.maps?.DirectionsService) return;
+    if (!booking || !route) return;
 
     const myPickupLat = booking.custom_pickup_lat ?? route.origin_lat;
     const myPickupLng = booking.custom_pickup_lng ?? route.origin_lng;
-    const shuttleLoc = { lat: shuttle.current_lat, lng: shuttle.current_lng };
-    const myPickup = { lat: myPickupLat, lng: myPickupLng };
 
-    // Find pickup stops before the current user along the route
-    const myProgress = passengerStops.find(s => s.isCurrentUser && s.type === 'pickup')?.orderIndex ?? 0;
+    // Check if departure is in the future
+    const now = new Date();
+    const [h, m, s] = (booking.scheduled_time || '08:00:00').split(':').map(Number);
+    const scheduledDeparture = new Date(booking.scheduled_date + 'T00:00:00');
+    scheduledDeparture.setHours(h, m, s || 0);
+    const msUntilDeparture = scheduledDeparture.getTime() - now.getTime();
+
+    // Find stops before me
+    const myProgressVal = passengerStops.find(s => s.isCurrentUser && s.type === 'pickup')?.orderIndex ?? 0;
     const stopsBeforeMe = passengerStops.filter(
-      s => s.type === 'pickup' && !s.isCurrentUser && s.orderIndex < myProgress && s.status !== 'boarded'
+      s => s.type === 'pickup' && !s.isCurrentUser && s.orderIndex < myProgressVal && s.status !== 'boarded'
     );
     setStopsBeforeYou(stopsBeforeMe.length);
 
-    // Build waypoints for stops before user
-    const waypoints = stopsBeforeMe.map(s => ({
-      location: new google.maps.LatLng(s.lat, s.lng),
-      stopover: true,
-    }));
+    // If shuttle has live GPS and trip has started, use Google Directions for accurate ETA
+    if (shuttle?.current_lat && shuttle?.current_lng && msUntilDeparture <= 0) {
+      if (typeof google === 'undefined' || !google?.maps?.DirectionsService) return;
 
-    const ds = new google.maps.DirectionsService();
-    ds.route(
-      {
-        origin: shuttleLoc,
-        destination: myPickup,
-        waypoints,
-        optimizeWaypoints: false,
-        travelMode: google.maps.TravelMode.DRIVING,
-      },
-      (result, status) => {
-        if (status === 'OK' && result) {
-          let totalSeconds = 0;
-          result.routes[0]?.legs?.forEach(leg => {
-            totalSeconds += leg.duration?.value ?? 0;
-          });
-          // Add ~1 min per intermediate stop for boarding
-          totalSeconds += stopsBeforeMe.length * 60;
-          setEtaMinutes(Math.ceil(totalSeconds / 60));
+      const shuttleLoc = { lat: shuttle.current_lat, lng: shuttle.current_lng };
+      const myPickup = { lat: myPickupLat, lng: myPickupLng };
+
+      const waypoints = stopsBeforeMe.map(s => ({
+        location: new google.maps.LatLng(s.lat, s.lng),
+        stopover: true,
+      }));
+
+      const ds = new google.maps.DirectionsService();
+      ds.route(
+        {
+          origin: shuttleLoc,
+          destination: myPickup,
+          waypoints,
+          optimizeWaypoints: false,
+          travelMode: google.maps.TravelMode.DRIVING,
+        },
+        (result, status) => {
+          if (status === 'OK' && result) {
+            let totalSeconds = 0;
+            result.routes[0]?.legs?.forEach(leg => {
+              totalSeconds += leg.duration?.value ?? 0;
+            });
+            totalSeconds += stopsBeforeMe.length * 60;
+            setEtaMinutes(Math.ceil(totalSeconds / 60));
+          }
         }
-      }
-    );
+      );
+    } else {
+      // Trip hasn't started yet — use time until departure + proportional route time
+      const routeDurationMin = route.estimated_duration_minutes || 30;
+      const calcRouteProgressLocal = (point: { lat: number; lng: number }) => {
+        const dx = point.lat - route.origin_lat;
+        const dy = point.lng - route.origin_lng;
+        const rx = route.destination_lat - route.origin_lat;
+        const ry = route.destination_lng - route.origin_lng;
+        const len = Math.sqrt(rx * rx + ry * ry);
+        if (len === 0) return 0;
+        return Math.max(0, Math.min(1, (dx * rx + dy * ry) / (len * len)));
+      };
+      const progressToUser = calcRouteProgressLocal({ lat: myPickupLat, lng: myPickupLng });
+      const routeTimeToUser = Math.ceil(routeDurationMin * progressToUser);
+      const minutesUntilDeparture = Math.max(0, Math.ceil(msUntilDeparture / 60000));
+      setEtaMinutes(minutesUntilDeparture + routeTimeToUser + stopsBeforeMe.length);
+    }
   }, [shuttle?.current_lat, shuttle?.current_lng, booking, route, passengerStops]);
 
   // Supabase Realtime subscription for live shuttle location
@@ -320,6 +346,15 @@ const TrackShuttle = () => {
 
   const isBoarded = booking?.status === 'boarded';
 
+  // Determine if trip departure is in the future
+  const tripDepartureMs = (() => {
+    if (!booking) return 0;
+    const [hh, mm, ss] = (booking.scheduled_time || '08:00:00').split(':').map(Number);
+    const dep = new Date(booking.scheduled_date + 'T00:00:00');
+    dep.setHours(hh, mm, ss || 0);
+    return dep.getTime();
+  })();
+  const tripNotStartedYet = tripDepartureMs > Date.now() && !shuttle?.current_lat;
   return (
     <div className="min-h-screen bg-surface flex flex-col">
       {/* Header */}
@@ -377,7 +412,8 @@ const TrackShuttle = () => {
         </div>
       </header>
 
-      {/* Map — fixed height */}
+
+
       <div className="relative" style={{ height: '45vh', minHeight: '280px' }}>
         {(!shuttle?.current_lat || !shuttle?.current_lng) && !loading ? (
           <div className="h-full bg-muted flex flex-col items-center justify-center text-center p-6">
@@ -423,10 +459,14 @@ const TrackShuttle = () => {
                   <Navigation className="w-5 h-5 text-primary-foreground" />
                   <div>
                     <p className="text-primary-foreground font-bold text-lg leading-tight">
-                      {etaMinutes} {lang === 'ar' ? 'دقيقة' : 'min'}
+                      {etaMinutes >= 60
+                        ? `${Math.floor(etaMinutes / 60)}${lang === 'ar' ? ' ساعة' : 'h'} ${etaMinutes % 60}${lang === 'ar' ? ' د' : 'm'}`
+                        : `${etaMinutes} ${lang === 'ar' ? 'دقيقة' : 'min'}`}
                     </p>
                     <p className="text-primary-foreground/80 text-xs">
-                      {lang === 'ar' ? 'الوقت المتوقع للوصول إليك' : 'Estimated arrival to you'}
+                      {tripNotStartedYet
+                        ? (lang === 'ar' ? 'الوقت المتبقي حتى وصول الشاتل' : 'Until shuttle arrives at your pickup')
+                        : (lang === 'ar' ? 'الوقت المتوقع للوصول إليك' : 'Estimated arrival to you')}
                     </p>
                   </div>
                 </div>
