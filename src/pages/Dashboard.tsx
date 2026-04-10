@@ -87,10 +87,28 @@ const Dashboard = () => {
   const [instapayPhone, setInstapayPhone] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [drivingDistanceKm, setDrivingDistanceKm] = useState<number | null>(null);
 
-  // Estimated price from pickup/dropoff distance
-  const estimatedPrice = pickup && dropoff
-    ? Math.max(10, Math.round(haversineDistanceKm(pickup, dropoff) * pricePerKm))
+  // Compute real driving distance between pickup & dropoff
+  useEffect(() => {
+    if (!pickup || !dropoff) { setDrivingDistanceKm(null); return; }
+    if (typeof google === 'undefined' || !google?.maps?.DirectionsService) {
+      setDrivingDistanceKm(haversineDistanceKm(pickup, dropoff));
+      return;
+    }
+    const ds = new google.maps.DirectionsService();
+    ds.route({ origin: pickup, destination: dropoff, travelMode: google.maps.TravelMode.DRIVING }, (res, status) => {
+      if (status === 'OK' && res?.routes?.[0]?.legs?.[0]?.distance?.value) {
+        setDrivingDistanceKm(res.routes[0].legs[0].distance.value / 1000);
+      } else {
+        setDrivingDistanceKm(haversineDistanceKm(pickup, dropoff));
+      }
+    });
+  }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng]);
+
+  // Estimated price from real driving distance
+  const estimatedPrice = drivingDistanceKm !== null
+    ? Math.max(10, Math.round(drivingDistanceKm * pricePerKm))
     : null;
 
   // Fetch user profile, roles, settings
