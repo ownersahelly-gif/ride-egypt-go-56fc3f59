@@ -43,11 +43,9 @@ const DriverDashboard = () => {
   const [scheduleForm, setScheduleForm] = useState({
     route_id: '',
     days: [] as number[],
-    departure_time: '08:00',
-    return_time: '17:00',
+    timeSlots: [{ direction: 'go' as 'go' | 'return', time: '08:00' }, { direction: 'return' as 'go' | 'return', time: '17:00' }] as { direction: 'go' | 'return'; time: string }[],
     is_recurring: true,
     min_passengers: 5,
-    trip_direction: 'both' as 'go' | 'return' | 'both',
   });
   const [savingSchedule, setSavingSchedule] = useState(false);
   const scheduleFormRef = useRef<HTMLDivElement>(null);
