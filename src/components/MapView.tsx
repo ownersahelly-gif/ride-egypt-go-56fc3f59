@@ -129,19 +129,35 @@ const MapView = ({
           gestureHandling: 'greedy',
         }}
       >
-        {markers.map((marker, i) => (
-          <Marker
-            key={i}
-            position={{ lat: marker.lat, lng: marker.lng }}
-            label={marker.label}
-            icon={marker.color === 'blue' ? {
-              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
-                '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="white" stroke-width="3"/><text x="20" y="26" text-anchor="middle" fill="white" font-size="18">🚐</text></svg>'
-              ),
-              scaledSize: new google.maps.Size(40, 40),
-            } : undefined}
-          />
-        ))}
+        {markers.map((marker, i) => {
+          const colorMap: Record<string, string> = {
+            red: '#EF4444',
+            green: '#22C55E',
+            blue: '#3B82F6',
+            orange: '#F97316',
+            purple: '#8B5CF6',
+          };
+          const fill = colorMap[marker.color || 'red'] || '#EF4444';
+          const isShuttle = marker.color === 'blue';
+
+          return (
+            <Marker
+              key={i}
+              position={{ lat: marker.lat, lng: marker.lng }}
+              label={!isShuttle && marker.label ? { text: marker.label, color: 'white', fontWeight: 'bold', fontSize: '11px' } : undefined}
+              icon={{
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+                  isShuttle
+                    ? `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="${fill}" stroke="white" stroke-width="3"/><text x="20" y="26" text-anchor="middle" fill="white" font-size="18">🚐</text></svg>`
+                    : `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42"><path d="M16 0C7.2 0 0 7.2 0 16c0 12 16 26 16 26s16-14 16-26C32 7.2 24.8 0 16 0z" fill="${fill}" stroke="white" stroke-width="2"/><circle cx="16" cy="16" r="10" fill="white" opacity="0.3"/></svg>`
+                ),
+                scaledSize: isShuttle ? new google.maps.Size(40, 40) : new google.maps.Size(28, 36),
+                anchor: isShuttle ? undefined : new google.maps.Point(14, 36),
+                labelOrigin: isShuttle ? undefined : new google.maps.Point(16, 16),
+              }}
+            />
+          );
+        })}
         {userLocation && (
           <Marker
             position={userLocation}
