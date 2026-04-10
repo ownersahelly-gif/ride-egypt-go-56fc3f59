@@ -603,7 +603,14 @@ const Dashboard = () => {
             {customPoint && result && (
               <div className={`flex items-center gap-2 text-xs p-2 rounded-lg ${result.ok ? 'bg-green-50 text-green-700' : 'bg-destructive/10 text-destructive'}`}>
                 {result.ok ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                <span className="font-medium">{customPoint.name}</span>
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium block truncate">{customPoint.name}</span>
+                  <span className="text-[10px] opacity-75">
+                    {result.ok
+                      ? (lang === 'ar' ? `${result.minutes} كم من المسار ✓` : `${result.minutes} km from route ✓`)
+                      : (lang === 'ar' ? `${result.minutes} كم من المسار (الحد ${MAX_DISTANCE_KM} كم)` : `${result.minutes} km from route (max ${MAX_DISTANCE_KM} km)`)}
+                  </span>
+                </div>
               </div>
             )}
           </div>
