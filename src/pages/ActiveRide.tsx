@@ -513,9 +513,21 @@ const ActiveRide = () => {
                   <Button variant="outline" onClick={() => setChatBookingId(currentStop.bookingId)}>
                     <MessageCircle className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" onClick={advanceToNextStop} title={lang === 'ar' ? 'تخطي' : 'Skip'}>
-                    <SkipForward className="w-4 h-4" />
-                  </Button>
+                  {waitSeconds >= 60 ? (
+                    <Button variant="destructive" onClick={advanceToNextStop} title={lang === 'ar' ? 'تخطي - انتظرت دقيقة' : 'Skip - waited 1 min'}>
+                      <SkipForward className="w-4 h-4 me-1" />
+                      {lang === 'ar' ? 'تخطي' : 'Skip'}
+                    </Button>
+                  ) : arrivedAt ? (
+                    <Button variant="outline" disabled title={lang === 'ar' ? `انتظر ${60 - waitSeconds} ثانية` : `Wait ${60 - waitSeconds}s`}>
+                      <Clock className="w-4 h-4 me-1" />
+                      {60 - waitSeconds}s
+                    </Button>
+                  ) : (
+                    <Button variant="outline" onClick={advanceToNextStop} title={lang === 'ar' ? 'تخطي' : 'Skip'}>
+                      <SkipForward className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               )
             ) : (
