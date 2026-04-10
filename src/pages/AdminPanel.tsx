@@ -66,15 +66,17 @@ const AdminPanel = () => {
   }, [user]);
 
   const fetchAllData = async () => {
-    const [routesRes, appsRes, shuttlesRes, bookingsRes, settingsRes] = await Promise.all([
+    const [routesRes, appsRes, shuttlesRes, bookingsRes, settingsRes, bundlesRes] = await Promise.all([
       supabase.from('routes').select('*').order('created_at', { ascending: false }),
       supabase.from('driver_applications').select('*').order('created_at', { ascending: false }),
       supabase.from('shuttles').select('*, routes(name_en, name_ar)').order('created_at', { ascending: false }),
       supabase.from('bookings').select('*, routes(name_en, name_ar)').order('created_at', { ascending: true }).limit(200),
       supabase.from('app_settings').select('*').eq('key', 'instapay_phone').single(),
+      supabase.from('ride_bundles').select('*, routes(name_en, name_ar)').order('created_at', { ascending: false }),
     ]);
 
     if (settingsRes.data) setInstapayPhone(settingsRes.data.value);
+    setBundles(bundlesRes.data || []);
 
     setRoutes(routesRes.data || []);
     setApplications(appsRes.data || []);
