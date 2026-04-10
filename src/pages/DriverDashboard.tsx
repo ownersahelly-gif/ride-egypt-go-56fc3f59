@@ -13,6 +13,7 @@ import { useDriverBookingNotifications } from '@/hooks/useBookingNotifications';
 import PlacesAutocomplete from '@/components/PlacesAutocomplete';
 import MapView from '@/components/MapView';
 import RideChat from '@/components/RideChat';
+import { useRef } from 'react';
 
 type TabType = 'home' | 'schedule' | 'trips';
 
