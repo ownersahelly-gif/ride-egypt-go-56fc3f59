@@ -253,8 +253,8 @@ const DriverDashboard = () => {
   const getExpectedEarnings = (routeObj: any) => {
     const price = parseFloat(routeObj.price || 0);
     const capacity = shuttle?.capacity || 14;
-    // Driver gets ~70% of fare
-    const driverShare = price * 0.7;
+    // Driver gets 90% of fare
+    const driverShare = price * 0.9;
     return {
       perTrip: driverShare * capacity,
       perDay: driverShare * capacity * 2, // going + return
@@ -532,7 +532,7 @@ const DriverDashboard = () => {
                             <div className="flex items-center gap-2 mb-2">
                               <TrendingUp className="w-4 h-4 text-green-600" />
                               <p className="text-sm font-semibold text-green-700 dark:text-green-400">
-                                {lang === 'ar' ? 'الأرباح المتوقعة (حصة السائق 70%)' : 'Expected Earnings (Driver gets 70%)'}
+                                {lang === 'ar' ? 'الأرباح المتوقعة (حصة السائق 90%)' : 'Expected Earnings (Driver gets 90%)'}
                               </p>
                             </div>
                             <div className="grid grid-cols-3 gap-3">
