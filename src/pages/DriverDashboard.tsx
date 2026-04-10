@@ -581,7 +581,7 @@ const DriverDashboard = () => {
                                 )}
                               </div>
                             )}
-                            <Button variant="outline" size="sm" onClick={() => { setTab('schedule'); openScheduleForRoute(allRoutes.find(r => r.id === routeId) || routeInfo); }}>
+                            <Button variant="outline" size="sm" onClick={() => { setTab('schedule'); openScheduleForRoute(allRoutes.find(r => r.id === routeId) || routeInfo); }} className="w-full">
                               <Calendar className="w-3.5 h-3.5 me-1" />{lang === 'ar' ? 'تعديل الجدول' : 'Edit Schedule'}
                             </Button>
                           </div>
