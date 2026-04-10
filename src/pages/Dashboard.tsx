@@ -353,8 +353,8 @@ const Dashboard = () => {
         toast({
           title: lang === 'ar' ? 'موقع بعيد عن المسار' : 'Too far from route',
           description: lang === 'ar'
-            ? `إضافة هذا الموقع على المسار تزيد الرحلة ${extraDistanceKm.toFixed(1)} كم (الحد الأقصى ${MAX_DISTANCE_KM} كم)`
-            : `Adding this point to the route adds ${extraDistanceKm.toFixed(1)} km (max ${MAX_DISTANCE_KM} km)`,
+            ? 'هذا الموقع بعيد جداً عن المسار، يرجى اختيار موقع أقرب'
+            : 'This location is too far from the route, please pick a closer spot',
           variant: 'destructive',
         });
       } else {
@@ -639,7 +639,7 @@ const Dashboard = () => {
   ) => {
     const isPickupType = type === 'pickup';
     const startLabel = isPickupType ? (lang === 'ar' ? '🚏 نقطة الانطلاق' : '🚏 Starting Point') : (lang === 'ar' ? '🏁 نقطة الوصول' : '🏁 End Point');
-    const nearbyLabel = lang === 'ar' ? '📍 اختر من الخريطة (≤2 كم)' : '📍 Pick on map (≤2 km)';
+    const nearbyLabel = lang === 'ar' ? '📍 اختر من الخريطة' : '📍 Pick on map';
     const isStartMode = mode === 'start' || mode === 'end';
 
     return (
@@ -689,7 +689,7 @@ const Dashboard = () => {
                   <span className="text-[10px] opacity-75">
                     {result.ok
                       ? (lang === 'ar' ? `${result.minutes} كم زيادة على المسار ✓` : `${result.minutes} km added to route ✓`)
-                      : (lang === 'ar' ? `${result.minutes} كم زيادة على المسار (الحد ${MAX_DISTANCE_KM} كم)` : `${result.minutes} km added to route (max ${MAX_DISTANCE_KM} km)`)}
+                      : (lang === 'ar' ? 'بعيد جداً عن المسار' : 'Too far from route')}
                   </span>
                 </div>
               </div>
