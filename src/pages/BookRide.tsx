@@ -70,6 +70,16 @@ const calcDeviation = (
   return Promise.all([directReq(), detourReq()]).then(([direct, detour]) => (detour - direct) / 60);
 };
 
+/** Haversine distance in km */
+const haversineDistanceKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+  const toRad = (d: number) => d * Math.PI / 180;
+  const R = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+};
+
 type PointSelection = { lat: number; lng: number; name: string } | null;
 
 const BookRide = () => {
