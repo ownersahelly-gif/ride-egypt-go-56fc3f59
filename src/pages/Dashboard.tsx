@@ -659,9 +659,9 @@ const Dashboard = () => {
       </header>
 
       {/* Floating booking card */}
-      <div className="relative z-10 mt-auto pb-20 px-4">
+      <div className="relative z-10 mt-auto pb-20 px-4 pointer-events-none">
         {step === 'search' && (
-          <div className="bg-card/95 backdrop-blur-md rounded-3xl shadow-2xl border border-border p-5 space-y-4 max-w-lg mx-auto">
+          <div className="pointer-events-auto bg-card/95 backdrop-blur-md rounded-3xl shadow-2xl border border-border p-5 space-y-4 max-w-lg mx-auto">
             <h2 className="text-lg font-bold text-foreground">
               {lang === 'ar' ? 'إلى أين تريد الذهاب؟' : 'Where are you going?'}
             </h2>
@@ -719,7 +719,7 @@ const Dashboard = () => {
         )}
 
         {step === 'results' && (
-          <div className="bg-card/95 backdrop-blur-md rounded-3xl shadow-2xl border border-border p-5 space-y-3 max-w-lg mx-auto max-h-[60vh] overflow-y-auto">
+          <div className="pointer-events-auto bg-card/95 backdrop-blur-md rounded-3xl shadow-2xl border border-border p-5 space-y-3 max-w-lg mx-auto max-h-[50vh] overflow-y-auto">
             <h2 className="text-lg font-bold text-foreground">
               {lang === 'ar' ? 'الرحلات المتاحة' : 'Available Rides'}
             </h2>
@@ -807,7 +807,7 @@ const Dashboard = () => {
         )}
 
         {step === 'details' && selectedRide && (
-          <div className="bg-card/95 backdrop-blur-md rounded-3xl shadow-2xl border border-border p-5 space-y-4 max-w-lg mx-auto max-h-[70vh] overflow-y-auto">
+          <div className="pointer-events-auto bg-card/95 backdrop-blur-md rounded-3xl shadow-2xl border border-border p-5 space-y-4 max-w-lg mx-auto max-h-[50vh] overflow-y-auto">
             {/* Driver & Vehicle */}
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
