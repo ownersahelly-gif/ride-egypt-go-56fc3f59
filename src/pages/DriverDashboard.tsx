@@ -193,9 +193,9 @@ const DriverDashboard = () => {
     const departureEntries = scheduleForm.days.map(day => ({
       driver_id: user.id, route_id: scheduleForm.route_id, shuttle_id: shuttle.id,
       day_of_week: day,
-      departure_time: scheduleForm.trip_direction !== 'return' ? scheduleForm.departure_time : null,
+      departure_time: scheduleForm.trip_direction === 'return' ? scheduleForm.return_time : scheduleForm.departure_time,
       is_recurring: scheduleForm.is_recurring, is_active: true, min_passengers: scheduleForm.min_passengers,
-      return_time: scheduleForm.trip_direction !== 'go' ? scheduleForm.return_time : null,
+      return_time: scheduleForm.trip_direction === 'go' ? null : (scheduleForm.trip_direction === 'return' ? null : scheduleForm.return_time),
     }));
     const { error } = await supabase.from('driver_schedules').insert(departureEntries);
     if (error) toast({ title: t('auth.error'), description: error.message, variant: 'destructive' });
