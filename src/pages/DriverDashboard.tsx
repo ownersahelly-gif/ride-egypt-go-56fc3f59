@@ -73,32 +73,105 @@ const DriverDashboard = () => {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const [{ data: profileData }, { data: shuttleData }, { data: routesData }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('user_id', user.id).single(),
-        supabase.from('shuttles').select('*, routes(*)').eq('driver_id', user.id).limit(1).maybeSingle(),
-        supabase.from('routes').select('*, stops(*)').eq('status', 'active'),
-      ]);
-
-      setProfile(profileData);
-      setAllRoutes(routesData || []);
-
-      if (shuttleData) {
-        setShuttle(shuttleData);
-        setRoute(shuttleData.routes);
-
-        const [{ data: bookingsData }, { data: schedulesData }] = await Promise.all([
-          supabase.from('bookings').select('*, routes(*)').eq('shuttle_id', shuttleData.id).order('scheduled_date', { ascending: true }).limit(50),
-          supabase.from('driver_schedules').select('*, routes(name_en, name_ar, price, origin_name_en, origin_name_ar, destination_name_en, destination_name_ar, estimated_duration_minutes)').eq('driver_id', user.id).order('day_of_week'),
+        const [{ data: profileData }, { data: shuttleData }, { data: routesData }] = await Promise.all([
+          supabase.from('profiles').select('*').eq('user_id', user.id).single(),
+          supabase.from('shuttles').select('*, routes(*)').eq('driver_id', user.id).limit(1).maybeSingle(),
+          supabase.from('routes').select('*, stops(*)').eq('status', 'active'),
         ]);
-        setBookings(bookingsData || []);
-        setDriverSchedules(schedulesData || []);
-      }
-      setLoading(false);
-    };
-    fetchData();
-  }, [user]);
 
-  const handleSignOut = async () => { await signOut(); navigate('/'); };
+        setProfile(profileData);
+        setAllRoutes(routesData || []);
+
+        if (shuttleData) {
+          setShuttle(shuttleData);
+          setRoute(shuttleData.routes);
+
+          const [{ data: bookingsData }, { data: schedulesData }] = await Promise.all([
+            supabase.from('bookings').select('*, routes(*)').eq('shuttle_id', shuttleData.id).order('scheduled_date', { ascending: true }).limit(50),
+            supabase.from('driver_schedules').select('*, routes(name_en, name_ar, price, origin_name_en, origin_name_ar, destination_name_en, destination_name_ar, estimated_duration_minutes)').eq('driver_id', user.id).order('day_of_week'),
+          ]);
+          setBookings(bookingsData || []);
+          setDriverSchedules(schedulesData || []);
+
+          // Fetch passenger profiles
+          if (bookingsData && bookingsData.length > 0) {
+            const userIds = [...new Set(bookingsData.map((b: any) => b.user_id))];
+            const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, phone').in('user_id', userIds);
+            if (profiles) {
+              const profileMap: Record<string, any> = {};
+              profiles.forEach((p: any) => { profileMap[p.user_id] = p; });
+              setPassengerProfiles(profileMap);
+            }
+          }
+        }
+        setLoading(false);
+      };
+      fetchData();
+    }, [user]);
+
+    const handleSignOut = async () => { await signOut(); navigate('/'); };
+
+    const toggleTrip = (key: string) => {
+      setExpandedTrips(prev => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key); else next.add(key);
+        return next;
+      });
+    };
+
+    // Optimize passenger order using nearest-neighbor for fuel efficiency
+    const optimizePassengerOrder = (passengers: any[], routeOrigin: { lat: number; lng: number }, routeDestination: { lat: number; lng: number }) => {
+      if (passengers.length <= 1) return passengers;
+
+      const getPickupCoords = (p: any) => ({
+        lat: p.custom_pickup_lat || routeOrigin.lat,
+        lng: p.custom_pickup_lng || routeOrigin.lng,
+      });
+
+      const getDropoffCoords = (p: any) => ({
+        lat: p.custom_dropoff_lat || routeDestination.lat,
+        lng: p.custom_dropoff_lng || routeDestination.lng,
+      });
+
+      const dist = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) =>
+        Math.sqrt(Math.pow(a.lat - b.lat, 2) + Math.pow(a.lng - b.lng, 2));
+
+      // Build waypoints: all pickups then all dropoffs
+      type WP = { type: 'pickup' | 'dropoff'; bookingIdx: number; coords: { lat: number; lng: number }; label: string };
+      const waypoints: WP[] = [];
+      passengers.forEach((p, i) => {
+        waypoints.push({ type: 'pickup', bookingIdx: i, coords: getPickupCoords(p), label: passengerProfiles[p.user_id]?.full_name || `Passenger ${i + 1}` });
+        waypoints.push({ type: 'dropoff', bookingIdx: i, coords: getDropoffCoords(p), label: passengerProfiles[p.user_id]?.full_name || `Passenger ${i + 1}` });
+      });
+
+      // Nearest-neighbor from route origin, pickups first then dropoffs
+      const pickups = waypoints.filter(w => w.type === 'pickup');
+      const dropoffs = waypoints.filter(w => w.type === 'dropoff');
+
+      const sortByNearest = (points: WP[], start: { lat: number; lng: number }) => {
+        const sorted: WP[] = [];
+        const remaining = [...points];
+        let current = start;
+        while (remaining.length > 0) {
+          let nearestIdx = 0;
+          let nearestDist = Infinity;
+          remaining.forEach((p, i) => {
+            const d = dist(current, p.coords);
+            if (d < nearestDist) { nearestDist = d; nearestIdx = i; }
+          });
+          sorted.push(remaining[nearestIdx]);
+          current = remaining[nearestIdx].coords;
+          remaining.splice(nearestIdx, 1);
+        }
+        return sorted;
+      };
+
+      const sortedPickups = sortByNearest(pickups, routeOrigin);
+      const lastPickup = sortedPickups.length > 0 ? sortedPickups[sortedPickups.length - 1].coords : routeOrigin;
+      const sortedDropoffs = sortByNearest(dropoffs, lastPickup);
+
+      return [...sortedPickups, ...sortedDropoffs];
+    };
 
   const updateShuttleStatus = async (newStatus: string) => {
     if (!shuttle) return;
