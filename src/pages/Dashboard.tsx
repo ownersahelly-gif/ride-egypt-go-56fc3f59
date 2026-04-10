@@ -639,7 +639,7 @@ const Dashboard = () => {
   ) => {
     const isPickupType = type === 'pickup';
     const startLabel = isPickupType ? (lang === 'ar' ? '🚏 نقطة الانطلاق' : '🚏 Starting Point') : (lang === 'ar' ? '🏁 نقطة الوصول' : '🏁 End Point');
-    const nearbyLabel = lang === 'ar' ? '📍 اختر من الخريطة (≤2 كم)' : '📍 Pick on map (≤2 km)';
+    const nearbyLabel = lang === 'ar' ? '📍 اختر من الخريطة' : '📍 Pick on map';
     const isStartMode = mode === 'start' || mode === 'end';
 
     return (
