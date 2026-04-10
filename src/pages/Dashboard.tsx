@@ -446,7 +446,8 @@ const Dashboard = () => {
 
   // Booking handler
   const handleBook = async (asWaitlist = false) => {
-    if (!user || !selectedRide) return;
+    if (!user) { navigate('/login'); return; }
+    if (!selectedRide) return;
     if (!isPickupValid || !isDropoffValid) {
       toast({ title: lang === 'ar' ? 'اختر نقاط الركوب والنزول' : 'Select pickup & dropoff', variant: 'destructive' });
       return;
