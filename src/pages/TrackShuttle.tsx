@@ -475,12 +475,16 @@ const TrackShuttle = () => {
                   <Navigation className="w-5 h-5 text-primary-foreground" />
                   <div>
                     <p className="text-primary-foreground font-bold text-lg leading-tight">
-                      {etaMinutes >= 60
-                        ? `${Math.floor(etaMinutes / 60)}${lang === 'ar' ? ' ساعة' : 'h'} ${etaMinutes % 60}${lang === 'ar' ? ' د' : 'm'}`
-                        : `${etaMinutes} ${lang === 'ar' ? 'دقيقة' : 'min'}`}
+                      {etaMinutes === 0
+                        ? (lang === 'ar' ? 'نقطة الانطلاق' : 'Starting point')
+                        : etaMinutes >= 60
+                          ? `${Math.floor(etaMinutes / 60)}${lang === 'ar' ? ' ساعة' : 'h'} ${etaMinutes % 60}${lang === 'ar' ? ' د' : 'm'}`
+                          : `${etaMinutes} ${lang === 'ar' ? 'دقيقة' : 'min'}`}
                     </p>
                     <p className="text-primary-foreground/80 text-xs">
-                      {lang === 'ar' ? 'الوقت المتوقع للوصول إليك' : 'Estimated arrival to you'}
+                      {etaMinutes === 0
+                        ? (lang === 'ar' ? 'السائق يبدأ من موقعك' : 'Driver starts at your location')
+                        : (lang === 'ar' ? 'الوقت المتوقع للوصول إليك' : 'Estimated arrival to you')}
                     </p>
                   </div>
                 </div>
