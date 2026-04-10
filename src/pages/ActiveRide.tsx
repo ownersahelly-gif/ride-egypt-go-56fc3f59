@@ -60,6 +60,8 @@ const ActiveRide = () => {
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const reachedStopsRef = useRef<Set<number>>(new Set());
+  const [arrivedAt, setArrivedAt] = useState<number | null>(null); // timestamp when driver arrived at current pickup
+  const [waitSeconds, setWaitSeconds] = useState(0);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
