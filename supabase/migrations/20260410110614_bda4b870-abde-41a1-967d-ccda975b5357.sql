@@ -1,0 +1,1 @@
+UPDATE bookings SET scheduled_date = CURRENT_DATE WHERE scheduled_date = '2026-04-12';
