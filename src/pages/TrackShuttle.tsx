@@ -310,6 +310,18 @@ const TrackShuttle = () => {
     return () => clearInterval(interval);
   }, [shuttle?.id]);
 
+  // Determine if trip departure is in the future (don't trust stale shuttle GPS)
+  const tripDepartureMs = (() => {
+    if (!booking) return 0;
+    const [hh, mm, ss] = (booking.scheduled_time || '08:00:00').split(':').map(Number);
+    const dep = new Date(booking.scheduled_date + 'T00:00:00');
+    dep.setHours(hh, mm, ss || 0);
+    return dep.getTime();
+  })();
+  const tripNotStartedYet = tripDepartureMs > Date.now();
+  const hasLiveGps = !!(shuttle?.current_lat && shuttle?.current_lng && !tripNotStartedYet);
+  const isBoarded = booking?.status === 'boarded';
+
   // Build tracking markers: shuttle → stops before user → YOU
   const myPickupLat = booking?.custom_pickup_lat ?? route?.origin_lat;
   const myPickupLng = booking?.custom_pickup_lng ?? route?.origin_lng;
@@ -343,20 +355,6 @@ const TrackShuttle = () => {
   const trackDestination = (myPickupLat && myPickupLng)
     ? { lat: myPickupLat, lng: myPickupLng } : undefined;
   const trackWaypoints = stopsBeforeMe.map(s => ({ lat: s.lat, lng: s.lng }));
-
-  const isBoarded = booking?.status === 'boarded';
-
-  // Determine if trip departure is in the future (don't trust stale shuttle GPS)
-  const tripDepartureMs = (() => {
-    if (!booking) return 0;
-    const [hh, mm, ss] = (booking.scheduled_time || '08:00:00').split(':').map(Number);
-    const dep = new Date(booking.scheduled_date + 'T00:00:00');
-    dep.setHours(hh, mm, ss || 0);
-    return dep.getTime();
-  })();
-  const tripNotStartedYet = tripDepartureMs > Date.now();
-  // Only consider shuttle GPS "live" if trip departure time has passed
-  const hasLiveGps = !!(shuttle?.current_lat && shuttle?.current_lng && !tripNotStartedYet);
   return (
     <div className="min-h-screen bg-surface flex flex-col">
       {/* Header */}
