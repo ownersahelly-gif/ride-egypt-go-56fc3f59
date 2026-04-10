@@ -121,7 +121,8 @@ const DriverDashboard = () => {
 
     // Optimize passenger order using nearest-neighbor for fuel efficiency
     const optimizePassengerOrder = (passengers: any[], routeOrigin: { lat: number; lng: number }, routeDestination: { lat: number; lng: number }) => {
-      if (passengers.length <= 1) return passengers;
+      type WP = { type: 'pickup' | 'dropoff'; bookingIdx: number; coords: { lat: number; lng: number }; label: string };
+      if (passengers.length === 0) return [] as WP[];
 
       const getPickupCoords = (p: any) => ({
         lat: p.custom_pickup_lat || routeOrigin.lat,
