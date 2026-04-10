@@ -30,54 +30,6 @@ const haversineDistanceKm = (a: { lat: number; lng: number }, b: { lat: number; 
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 };
 
-/** Check if a point is close to the route polyline */
-const isPointOnRoute = (point: { lat: number; lng: number }, routeResult: any): boolean => {
-  if (!routeResult || typeof google === 'undefined' || !google?.maps) return false;
-  const path = routeResult.routes[0]?.overview_path;
-  if (!path) return false;
-  const pt = new google.maps.LatLng(point.lat, point.lng);
-  const isOnPoly = google.maps.geometry?.poly?.isLocationOnEdge(pt, new google.maps.Polyline({ path }), 5e-4);
-  if (isOnPoly) return true;
-  for (const p of path) {
-    const dist = google.maps.geometry?.spherical?.computeDistanceBetween(pt, p);
-    if (dist !== undefined && dist < 80) return true;
-  }
-  return false;
-};
-
-/** Calculate driving-time deviation */
-const calcDeviation = (
-  prevStop: { lat: number; lng: number },
-  nextStop: { lat: number; lng: number },
-  customPoint: { lat: number; lng: number },
-): Promise<number> => {
-  if (typeof google === 'undefined' || !google?.maps?.DirectionsService) return Promise.resolve(999);
-  const ds = new google.maps.DirectionsService();
-  const directReq = (): Promise<number> =>
-    new Promise((res) =>
-      ds.route(
-        { origin: prevStop, destination: nextStop, travelMode: google.maps.TravelMode.DRIVING },
-        (r, s) => res(s === 'OK' && r ? (r.routes[0]?.legs[0]?.duration?.value ?? 0) : 0),
-      ),
-    );
-  const detourReq = (): Promise<number> =>
-    new Promise((res) =>
-      ds.route(
-        {
-          origin: prevStop,
-          destination: nextStop,
-          waypoints: [{ location: customPoint, stopover: true }],
-          travelMode: google.maps.TravelMode.DRIVING,
-        },
-        (r, s) => {
-          if (s !== 'OK' || !r) return res(99999);
-          const legs = r.routes[0]?.legs ?? [];
-          res(legs.reduce((sum, l) => sum + (l.duration?.value ?? 0), 0));
-        },
-      ),
-    );
-  return Promise.all([directReq(), detourReq()]).then(([direct, detour]) => (detour - direct) / 60);
-};
 
 type PointSelection = { lat: number; lng: number; name: string } | null;
 
