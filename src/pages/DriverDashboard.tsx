@@ -302,13 +302,13 @@ const DriverDashboard = () => {
       driver_id: user.id, route_id: quickAddDay.routeId, shuttle_id: quickAddDay.shuttleId,
       day_of_week: quickAddDay.day,
       departure_time: quickAddDir === 'go' ? quickAddTime : quickAddTime,
-      return_time: null,
+      return_time: quickAddDir === 'return' ? quickAddTime : null,
       is_recurring: true, is_active: true, min_passengers: 5,
     };
     const { error } = await supabase.from('driver_schedules').insert(entry);
     if (error) toast({ title: t('auth.error'), description: error.message, variant: 'destructive' });
     else {
-      toast({ title: lang === 'ar' ? 'تمت إضافة الوقت!' : 'Time slot added!' });
+      toast({ title: lang === 'ar' ? 'تمت إضافة الرحلة!' : 'Trip added!' });
       await generateRideInstances([entry]);
       const { data } = await supabase.from('driver_schedules').select('*, routes(name_en, name_ar, price, origin_name_en, origin_name_ar, destination_name_en, destination_name_ar, estimated_duration_minutes, origin_lat, origin_lng, destination_lat, destination_lng)').eq('driver_id', user.id).order('day_of_week');
       setDriverSchedules(data || []);
