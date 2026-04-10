@@ -81,6 +81,16 @@ const AdminPanel = () => {
 
     if (settingsRes.data) setInstapayPhone(settingsRes.data.value);
     setBundles(bundlesRes.data || []);
+    const cvs = carpoolVerRes.data || [];
+    setCarpoolVerifications(cvs);
+    // Fetch profiles for carpool verifications
+    const cvUserIds = [...new Set(cvs.map((v: any) => v.user_id))];
+    if (cvUserIds.length > 0) {
+      const { data: cvProfs } = await supabase.from('profiles').select('user_id, full_name, phone').in('user_id', cvUserIds);
+      const cvMap: Record<string, any> = {};
+      (cvProfs || []).forEach((p: any) => { cvMap[p.user_id] = p; });
+      setCarpoolProfiles(cvMap);
+    }
 
     setRoutes(routesRes.data || []);
     setApplications(appsRes.data || []);
