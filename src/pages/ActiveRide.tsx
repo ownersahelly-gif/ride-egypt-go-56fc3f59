@@ -193,8 +193,10 @@ const ActiveRide = () => {
       }
     });
 
-    stops.sort((a, b) => a.routeProgress - b.routeProgress);
-    setOrderedStops(stops);
+    // Sort: all pickups first (by route progress), then all dropoffs (by route progress)
+    const pickups = stops.filter(s => s.type === 'pickup').sort((a, b) => a.routeProgress - b.routeProgress);
+    const dropoffs = stops.filter(s => s.type === 'dropoff').sort((a, b) => a.routeProgress - b.routeProgress);
+    setOrderedStops([...pickups, ...dropoffs]);
   }, [route, bookings, profiles, lang]);
 
   // Update driver location & push to DB
