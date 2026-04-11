@@ -361,7 +361,32 @@ const ActiveRide = () => {
 
   const advanceToNextStop = () => {
     if (currentStopIndex < activeStops.length - 1) {
-      setCurrentStopIndex(prev => prev + 1);
+      const nextIndex = currentStopIndex + 1;
+      setCurrentStopIndex(nextIndex);
+
+      // Broadcast "heading to next stop" status for passengers
+      if (shuttle?.id && activeStops[nextIndex]) {
+        const nextStop = activeStops[nextIndex].stop;
+        const broadcastChannel = supabase.channel(`shuttle-live-${shuttle.id}`);
+        broadcastChannel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            broadcastChannel.send({
+              type: 'broadcast',
+              event: 'driver-location',
+              payload: {
+                lat: driverLocation?.lat || nextStop.lat,
+                lng: driverLocation?.lng || nextStop.lng,
+                ts: Date.now(),
+                headingToStopId: nextStop.id,
+                headingToStopNameEn: nextStop.name_en,
+                headingToStopNameAr: nextStop.name_ar,
+                headingToStopIndex: nextIndex,
+              },
+            });
+            setTimeout(() => supabase.removeChannel(broadcastChannel), 1000);
+          }
+        });
+      }
     }
   };
 
@@ -428,6 +453,44 @@ const ActiveRide = () => {
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'boarded', boarded_at: new Date().toISOString() } : b));
     setBoardingInput('');
     setVerifyingBooking(null);
+
+    // === BOARDING CODE = LOCATION ANCHOR ===
+    // Use the current stop's coordinates as the driver's confirmed location
+    if (currentActive && shuttle?.id) {
+      const stopLat = currentActive.stop.lat;
+      const stopLng = currentActive.stop.lng;
+      
+      // Update driver location state
+      setDriverLocation({ lat: stopLat, lng: stopLng });
+
+      // Broadcast stop coordinates as driver location (instant for passengers)
+      const broadcastChannel = supabase.channel(`shuttle-live-${shuttle.id}`);
+      broadcastChannel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          broadcastChannel.send({
+            type: 'broadcast',
+            event: 'driver-location',
+            payload: { 
+              lat: stopLat, 
+              lng: stopLng, 
+              ts: Date.now(),
+              stopId: currentActive.stop.id,
+              stopNameEn: currentActive.stop.name_en,
+              stopNameAr: currentActive.stop.name_ar,
+              stopIndex: currentStopIndex,
+            },
+          });
+          // Clean up after sending
+          setTimeout(() => supabase.removeChannel(broadcastChannel), 1000);
+        }
+      });
+
+      // Persist to DB for fallback
+      supabase.from('shuttles').update({
+        current_lat: stopLat,
+        current_lng: stopLng,
+      }).eq('id', shuttle.id);
+    }
 
     // Show payment info
     const amountDue = booking.payment_proof_url ? 0 : parseFloat(booking.total_price || 0);
