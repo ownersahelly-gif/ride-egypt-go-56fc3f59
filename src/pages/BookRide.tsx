@@ -305,6 +305,7 @@ const BookRide = () => {
     if (onRoute) {
       setResult({ ok: true, minutes: 0, onRoute: true });
       setValidating(false);
+      if (type === 'pickup') scrollToDropoff();
       return;
     }
 
@@ -316,6 +317,7 @@ const BookRide = () => {
       const deviation = await calcDeviation(origin, dest, point);
       const ok = deviation <= 5;
       setResult({ ok, minutes: Math.round(deviation * 10) / 10, onRoute: false });
+      if (ok && type === 'pickup') scrollToDropoff();
       if (!ok) {
         toast({
           title: lang === 'ar' ? 'موقع بعيد عن المسار' : 'Too far from route',
@@ -1103,7 +1105,9 @@ const BookRide = () => {
             {renderPointSelector('pickup', pickupMode, setPickupMode, customPickup, validatingPickup, pickupResult)}
 
             {/* Dropoff */}
+            <div ref={dropoffRef}>
             {renderPointSelector('dropoff', dropoffMode, setDropoffMode, customDropoff, validatingDropoff, dropoffResult)}
+            </div>
 
             {/* Trip Direction - only show based on ride direction */}
             <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
