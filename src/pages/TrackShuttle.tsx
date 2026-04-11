@@ -355,7 +355,11 @@ const TrackShuttle = () => {
         table: 'shuttles',
         filter: `id=eq.${shuttle.id}`,
       }, (payload) => {
-        setShuttle((prev: any) => ({ ...prev, ...payload.new }));
+        const newData = payload.new as any;
+        setShuttle((prev: any) => ({ ...prev, ...newData }));
+        if (newData.current_lat && newData.current_lng) {
+          updateSmoothPos({ lat: newData.current_lat, lng: newData.current_lng });
+        }
       })
       .subscribe();
 
