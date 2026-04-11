@@ -750,7 +750,7 @@ const AdminPanel = () => {
                           onSelect={(place) => setStopForm(p => ({ ...p, lat: parseFloat(place.lat.toFixed(6)), lng: parseFloat(place.lng.toFixed(6)), name_en: p.name_en || place.name, name_ar: p.name_ar || place.name }))}
                           iconColor="text-primary"
                         />
-                        <div className="h-[200px] w-full overflow-hidden rounded-lg border border-border bg-muted">
+                        <div className="h-[250px] w-full overflow-hidden rounded-lg border border-border bg-muted">
                           <MapView
                             className="h-full w-full"
                             center={stopForm.lat !== 0 ? { lat: stopForm.lat, lng: stopForm.lng } : { lat: route.origin_lat, lng: route.origin_lng }}
