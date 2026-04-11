@@ -755,12 +755,18 @@ const AdminPanel = () => {
                                 <p className="text-xs text-muted-foreground">
                                   {stop.stop_type === 'both' ? '↕ Pickup & Dropoff' : stop.stop_type === 'pickup' ? '🟢 Pickup only' : '🔴 Dropoff only'}
                                   {' · '}{stop.lat.toFixed(4)}, {stop.lng.toFixed(4)}
+                                  {stop.arrival_time && <> · <Clock className="w-3 h-3 inline" /> {stop.arrival_time}</>}
                                 </p>
                               </div>
                             </div>
-                            <Button size="sm" variant="ghost" className="text-destructive h-7 w-7 p-0" onClick={() => deleteStop(stop.id, route.id)}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-primary" onClick={() => startEditStop(stop)}>
+                                <Edit className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-destructive h-7 w-7 p-0" onClick={() => deleteStop(stop.id, route.id)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -768,9 +774,13 @@ const AdminPanel = () => {
                       <p className="text-sm text-muted-foreground">{lang === 'ar' ? 'لا توجد نقاط توقف بعد' : 'No stops yet. Add stops below.'}</p>
                     )}
 
-                    {/* Add stop form */}
+                    {/* Add/Edit stop form */}
                     <div className="bg-surface rounded-xl p-4 space-y-3 border border-border">
-                      <p className="text-sm font-medium text-foreground">{lang === 'ar' ? 'إضافة نقطة توقف' : 'Add New Stop'}</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {editingStopId
+                          ? (lang === 'ar' ? 'تعديل نقطة التوقف' : 'Edit Stop')
+                          : (lang === 'ar' ? 'إضافة نقطة توقف' : 'Add New Stop')}
+                      </p>
                       <div className="grid sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <Label className="text-xs">Name (EN)</Label>
@@ -793,6 +803,10 @@ const AdminPanel = () => {
                           <Label className="text-xs">{lang === 'ar' ? 'الترتيب' : 'Order'}</Label>
                           <Input type="number" value={stopForm.stop_order} onChange={e => setStopForm(p => ({ ...p, stop_order: parseInt(e.target.value) || 0 }))} className="h-9 text-sm" />
                         </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs flex items-center gap-1"><Clock className="w-3 h-3" /> {lang === 'ar' ? 'وقت الوصول' : 'Arrival Time'}</Label>
+                          <Input type="time" value={stopForm.arrival_time} onChange={e => setStopForm(p => ({ ...p, arrival_time: e.target.value }))} className="h-9 text-sm" />
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs flex items-center gap-1"><Search className="w-3 h-3" /> {lang === 'ar' ? 'ابحث عن الموقع' : 'Search location'}</Label>
@@ -801,16 +815,20 @@ const AdminPanel = () => {
                           onSelect={(place) => setStopForm(p => ({ ...p, lat: parseFloat(place.lat.toFixed(6)), lng: parseFloat(place.lng.toFixed(6)), name_en: p.name_en || place.name, name_ar: p.name_ar || place.name }))}
                           iconColor="text-primary"
                         />
-                        <div className="h-[250px] w-full overflow-hidden rounded-lg border border-border bg-muted">
+                        <div className="h-[300px] w-full overflow-hidden rounded-lg border border-border bg-muted">
                           <MapView
                             className="h-full w-full"
                             center={stopForm.lat !== 0 ? { lat: stopForm.lat, lng: stopForm.lng } : { lat: route.origin_lat, lng: route.origin_lng }}
-                            zoom={stopForm.lat !== 0 ? 16 : 12}
+                            zoom={stopForm.lat !== 0 ? 15 : 11}
+                            origin={{ lat: route.origin_lat, lng: route.origin_lng }}
+                            destination={{ lat: route.destination_lat, lng: route.destination_lng }}
+                            waypoints={(routeStopsMap[route.id] || []).map((s: any) => ({ lat: s.lat, lng: s.lng }))}
+                            showDirections={true}
                             markers={[
                               { lat: route.origin_lat, lng: route.origin_lng, label: 'A', color: 'green' },
                               { lat: route.destination_lat, lng: route.destination_lng, label: 'B', color: 'red' },
-                              ...(stopForm.lat !== 0 ? [{ lat: stopForm.lat, lng: stopForm.lng, label: '📍', color: 'blue' as const }] : []),
-                              ...(routeStopsMap[route.id] || []).map((s: any, i: number) => ({ lat: s.lat, lng: s.lng, label: (i + 1).toString(), color: 'blue' as const })),
+                              ...(stopForm.lat !== 0 ? [{ lat: stopForm.lat, lng: stopForm.lng, label: '📍', color: 'orange' as const }] : []),
+                              ...(routeStopsMap[route.id] || []).map((s: any, i: number) => ({ lat: s.lat, lng: s.lng, label: `${i + 1}`, color: 'blue' as const })),
                             ]}
                             onMapClick={(lat, lng) => setStopForm(p => ({ ...p, lat: parseFloat(lat.toFixed(6)), lng: parseFloat(lng.toFixed(6)) }))}
                             showUserLocation={false}
@@ -818,10 +836,17 @@ const AdminPanel = () => {
                         </div>
                         {stopForm.lat !== 0 && <p className="text-xs text-muted-foreground">{stopForm.lat.toFixed(4)}, {stopForm.lng.toFixed(4)}</p>}
                       </div>
-                      <Button size="sm" onClick={() => addStop(route.id)} disabled={!stopForm.name_en || !stopForm.name_ar || stopForm.lat === 0 || addingStop}>
-                        {addingStop ? <Loader2 className="w-3.5 h-3.5 animate-spin me-1" /> : <Plus className="w-3.5 h-3.5 me-1" />}
-                        {lang === 'ar' ? 'إضافة' : 'Add Stop'}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => addStop(route.id)} disabled={!stopForm.name_en || !stopForm.name_ar || stopForm.lat === 0 || addingStop}>
+                          {addingStop ? <Loader2 className="w-3.5 h-3.5 animate-spin me-1" /> : editingStopId ? <Edit className="w-3.5 h-3.5 me-1" /> : <Plus className="w-3.5 h-3.5 me-1" />}
+                          {editingStopId ? (lang === 'ar' ? 'تحديث' : 'Update Stop') : (lang === 'ar' ? 'إضافة' : 'Add Stop')}
+                        </Button>
+                        {editingStopId && (
+                          <Button size="sm" variant="outline" onClick={() => { setEditingStopId(null); setStopForm({ name_en: '', name_ar: '', lat: 0, lng: 0, stop_type: 'both', stop_order: (routeStopsMap[route.id]?.length || 0), arrival_time: '' }); }}>
+                            {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
