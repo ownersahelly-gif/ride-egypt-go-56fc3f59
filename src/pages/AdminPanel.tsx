@@ -643,6 +643,10 @@ const AdminPanel = () => {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
                   <span>{route.price} EGP</span>
                   <span><Clock className="w-3 h-3 inline me-1" />{route.estimated_duration_minutes} min</span>
+                  <span className="flex items-center gap-1">
+                    <ListOrdered className="w-3 h-3 inline" />
+                    {routeStopsMap[route.id]?.length || 0} {lang === 'ar' ? 'نقاط' : 'stops'}
+                  </span>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <Button size="sm" variant="outline" onClick={() => startEditRoute(route)}>
