@@ -729,20 +729,17 @@ const AdminPanel = () => {
                           <Input type="number" value={stopForm.stop_order} onChange={e => setStopForm(p => ({ ...p, stop_order: parseInt(e.target.value) || 0 }))} className="h-9 text-sm" />
                         </div>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         <Label className="text-xs flex items-center gap-1"><Search className="w-3 h-3" /> {lang === 'ar' ? 'ابحث عن الموقع' : 'Search location'}</Label>
                         <PlacesAutocomplete
                           placeholder={lang === 'ar' ? 'ابحث عن موقع...' : 'Search for a place...'}
                           onSelect={(place) => setStopForm(p => ({ ...p, lat: parseFloat(place.lat.toFixed(6)), lng: parseFloat(place.lng.toFixed(6)), name_en: p.name_en || place.name, name_ar: p.name_ar || place.name }))}
                           iconColor="text-primary"
                         />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1"><MapPin className="w-3 h-3" /> {lang === 'ar' ? 'أو انقر على الخريطة' : 'Or click on map'}</Label>
                         <MapView
-                          className="h-[180px] rounded-lg overflow-hidden"
+                          className="h-[200px] rounded-lg overflow-hidden"
                           center={{ lat: stopForm.lat || route.origin_lat, lng: stopForm.lng || route.origin_lng }}
-                          zoom={13}
+                          zoom={stopForm.lat ? 16 : 13}
                           markers={[
                             { lat: route.origin_lat, lng: route.origin_lng, label: 'A', color: 'green' },
                             { lat: route.destination_lat, lng: route.destination_lng, label: 'B', color: 'red' },
@@ -753,6 +750,7 @@ const AdminPanel = () => {
                           showUserLocation={false}
                         />
                         {stopForm.lat !== 0 && <p className="text-xs text-muted-foreground">{stopForm.lat.toFixed(4)}, {stopForm.lng.toFixed(4)}</p>}
+                      </div>
                       </div>
                       <Button size="sm" onClick={() => addStop(route.id)} disabled={!stopForm.name_en || !stopForm.name_ar || stopForm.lat === 0 || addingStop}>
                         {addingStop ? <Loader2 className="w-3.5 h-3.5 animate-spin me-1" /> : <Plus className="w-3.5 h-3.5 me-1" />}
