@@ -25,6 +25,7 @@ const MapPinPicker = ({ activePin, origin, destination, onConfirm, onCancel, cla
   const [locating, setLocating] = useState(false);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
+  const initialCenterRef = useRef<{ lat: number; lng: number } | null>(null);
 
   const { isLoaded, loadError } = useJsApiLoader({ googleMapsApiKey: GOOGLE_MAPS_KEY, libraries });
 
