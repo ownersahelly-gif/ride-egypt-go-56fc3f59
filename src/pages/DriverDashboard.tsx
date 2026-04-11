@@ -929,20 +929,26 @@ const DriverDashboard = () => {
                               <p className="text-xs text-muted-foreground">{routeInfo?.price} EGP/{lang === 'ar' ? 'مقعد' : 'seat'}</p>
                             </div>
                           </div>
-                          {routeInfo?.origin_lat && routeInfo?.destination_lat && (
-                            <MapView
-                              className="h-[180px] mb-3"
-                              markers={[
-                                { lat: routeInfo.origin_lat, lng: routeInfo.origin_lng, label: 'A', color: 'green' },
-                                { lat: routeInfo.destination_lat, lng: routeInfo.destination_lng, label: 'B', color: 'red' },
-                              ]}
-                              origin={{ lat: routeInfo.origin_lat, lng: routeInfo.origin_lng }}
-                              destination={{ lat: routeInfo.destination_lat, lng: routeInfo.destination_lng }}
-                              showDirections
-                              showUserLocation={false}
-                              zoom={10}
-                            />
-                          )}
+                          {routeInfo?.origin_lat && routeInfo?.destination_lat && (() => {
+                            const routeStops = allRoutes.find((r: any) => r.id === routeId)?.stops || [];
+                            const sortedStops = [...routeStops].sort((a: any, b: any) => a.stop_order - b.stop_order);
+                            return (
+                              <MapView
+                                className="h-[200px] mb-3"
+                                markers={[
+                                  { lat: routeInfo.origin_lat, lng: routeInfo.origin_lng, label: 'A', color: 'green' },
+                                  ...sortedStops.map((s: any, i: number) => ({ lat: s.lat, lng: s.lng, label: `${i + 1}`, color: 'blue' as const })),
+                                  { lat: routeInfo.destination_lat, lng: routeInfo.destination_lng, label: 'B', color: 'red' },
+                                ]}
+                                origin={{ lat: routeInfo.origin_lat, lng: routeInfo.origin_lng }}
+                                destination={{ lat: routeInfo.destination_lat, lng: routeInfo.destination_lng }}
+                                waypoints={sortedStops.map((s: any) => ({ lat: s.lat, lng: s.lng }))}
+                                showDirections
+                                showUserLocation={false}
+                                zoom={10}
+                              />
+                            );
+                          })()}
                           <div className="space-y-1.5">
                             {(schedules as any[]).sort((a: any, b: any) => a.day_of_week - b.day_of_week).map((s: any) => (
                               <div key={s.id} className="flex items-center justify-between bg-surface rounded-lg px-3 py-2">
@@ -965,11 +971,34 @@ const DriverDashboard = () => {
                 {/* Add schedule form */}
                 {showScheduleForm ? (
                   <div ref={scheduleFormRef} className="bg-card border-2 border-primary/20 rounded-2xl p-5 space-y-4">
-                    {selectedRouteForSchedule && (
-                      <div className="bg-primary/5 rounded-xl p-3">
-                        <p className="font-medium text-foreground text-sm">{lang === 'ar' ? selectedRouteForSchedule.name_ar : selectedRouteForSchedule.name_en}</p>
-                        <p className="text-xs text-muted-foreground">{lang === 'ar' ? selectedRouteForSchedule.origin_name_ar : selectedRouteForSchedule.origin_name_en} → {lang === 'ar' ? selectedRouteForSchedule.destination_name_ar : selectedRouteForSchedule.destination_name_en}</p>
-                      </div>
+                    {selectedRouteForSchedule && (() => {
+                      const formStops = selectedRouteForSchedule.stops || [];
+                      const sortedFormStops = [...formStops].sort((a: any, b: any) => a.stop_order - b.stop_order);
+                      return (
+                        <div className="space-y-3">
+                          <div className="bg-primary/5 rounded-xl p-3">
+                            <p className="font-medium text-foreground text-sm">{lang === 'ar' ? selectedRouteForSchedule.name_ar : selectedRouteForSchedule.name_en}</p>
+                            <p className="text-xs text-muted-foreground">{lang === 'ar' ? selectedRouteForSchedule.origin_name_ar : selectedRouteForSchedule.origin_name_en} → {lang === 'ar' ? selectedRouteForSchedule.destination_name_ar : selectedRouteForSchedule.destination_name_en}</p>
+                          </div>
+                          {selectedRouteForSchedule.origin_lat && selectedRouteForSchedule.destination_lat && (
+                            <MapView
+                              className="h-[220px]"
+                              markers={[
+                                { lat: selectedRouteForSchedule.origin_lat, lng: selectedRouteForSchedule.origin_lng, label: 'A', color: 'green' },
+                                ...sortedFormStops.map((s: any, i: number) => ({ lat: s.lat, lng: s.lng, label: `${i + 1}`, color: 'blue' as const })),
+                                { lat: selectedRouteForSchedule.destination_lat, lng: selectedRouteForSchedule.destination_lng, label: 'B', color: 'red' },
+                              ]}
+                              origin={{ lat: selectedRouteForSchedule.origin_lat, lng: selectedRouteForSchedule.origin_lng }}
+                              destination={{ lat: selectedRouteForSchedule.destination_lat, lng: selectedRouteForSchedule.destination_lng }}
+                              waypoints={sortedFormStops.map((s: any) => ({ lat: s.lat, lng: s.lng }))}
+                              showDirections
+                              showUserLocation={false}
+                              zoom={10}
+                            />
+                          )}
+                        </div>
+                      );
+                    })()}
                     )}
                     {!selectedRouteForSchedule && (
                       <div className="space-y-2">
@@ -1081,20 +1110,25 @@ const DriverDashboard = () => {
                             <p className="text-[10px] text-muted-foreground">{r.estimated_duration_minutes} {lang === 'ar' ? 'د' : 'min'}</p>
                           </div>
                         </div>
-                        {r.origin_lat && r.destination_lat && (
-                          <MapView
-                            className="h-[150px] mb-2"
-                            markers={[
-                              { lat: r.origin_lat, lng: r.origin_lng, label: 'A', color: 'green' },
-                              { lat: r.destination_lat, lng: r.destination_lng, label: 'B', color: 'red' },
-                            ]}
-                            origin={{ lat: r.origin_lat, lng: r.origin_lng }}
-                            destination={{ lat: r.destination_lat, lng: r.destination_lng }}
-                            showDirections
-                            showUserLocation={false}
-                            zoom={10}
-                          />
-                        )}
+                        {r.origin_lat && r.destination_lat && (() => {
+                          const rStops = (r.stops || []).sort((a: any, b: any) => a.stop_order - b.stop_order);
+                          return (
+                            <MapView
+                              className="h-[200px] mb-2"
+                              markers={[
+                                { lat: r.origin_lat, lng: r.origin_lng, label: 'A', color: 'green' },
+                                ...rStops.map((s: any, i: number) => ({ lat: s.lat, lng: s.lng, label: `${i + 1}`, color: 'blue' as const })),
+                                { lat: r.destination_lat, lng: r.destination_lng, label: 'B', color: 'red' },
+                              ]}
+                              origin={{ lat: r.origin_lat, lng: r.origin_lng }}
+                              destination={{ lat: r.destination_lat, lng: r.destination_lng }}
+                              waypoints={rStops.map((s: any) => ({ lat: s.lat, lng: s.lng }))}
+                              showDirections
+                              showUserLocation={false}
+                              zoom={10}
+                            />
+                          );
+                        })()}
                         <div className="flex items-center justify-between">
                           <p className="text-xs text-green-600">
                             <TrendingUp className="w-3 h-3 inline me-1" />
