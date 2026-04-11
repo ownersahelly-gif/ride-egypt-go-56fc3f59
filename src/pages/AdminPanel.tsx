@@ -336,8 +336,29 @@ const AdminPanel = () => {
     if (error) toast.error(error.message);
     else {
       toast.success(lang === 'ar' ? 'تم حذف نقطة التوقف' : 'Stop deleted');
+      // Re-order remaining stops
+      const remaining = (routeStopsMap[routeId] || []).filter(s => s.id !== stopId);
+      for (let i = 0; i < remaining.length; i++) {
+        if (remaining[i].stop_order !== i) {
+          await supabase.from('stops').update({ stop_order: i }).eq('id', remaining[i].id);
+        }
+      }
       await fetchStopsForRoute(routeId);
     }
+  };
+
+  const moveStop = async (routeId: string, index: number, direction: 'up' | 'down') => {
+    const stops = [...(routeStopsMap[routeId] || [])];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= stops.length) return;
+    // Swap stop_order values
+    const currentStop = stops[index];
+    const targetStop = stops[targetIndex];
+    await Promise.all([
+      supabase.from('stops').update({ stop_order: targetIndex }).eq('id', currentStop.id),
+      supabase.from('stops').update({ stop_order: index }).eq('id', targetStop.id),
+    ]);
+    await fetchStopsForRoute(routeId);
   };
 
 
