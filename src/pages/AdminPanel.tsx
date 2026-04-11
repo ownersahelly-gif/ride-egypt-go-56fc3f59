@@ -261,7 +261,7 @@ const AdminPanel = () => {
       return;
     }
     setExpandedRouteStops(routeId);
-    setStopForm({ name_en: '', name_ar: '', lat: 0, lng: 0, stop_type: 'both', stop_order: (routeStopsMap[routeId]?.length || 0), arrival_time: '' });
+    setStopForm({ name_en: '', name_ar: '', lat: 0, lng: 0, stop_type: 'both', arrival_time: '' });
     setEditingStopId(null);
     if (!routeStopsMap[routeId]) await fetchStopsForRoute(routeId);
   };
@@ -283,7 +283,7 @@ const AdminPanel = () => {
       else {
         toast.success(lang === 'ar' ? 'تم تحديث نقطة التوقف' : 'Stop updated');
         setEditingStopId(null);
-        setStopForm({ name_en: '', name_ar: '', lat: 0, lng: 0, stop_type: 'both', stop_order: (routeStopsMap[routeId]?.length || 0), arrival_time: '' });
+        setStopForm({ name_en: '', name_ar: '', lat: 0, lng: 0, stop_type: 'both', arrival_time: '' });
         await fetchStopsForRoute(routeId);
       }
     } else {
@@ -300,7 +300,7 @@ const AdminPanel = () => {
       if (error) toast.error(error.message);
       else {
         toast.success(lang === 'ar' ? 'تمت إضافة نقطة التوقف' : 'Stop added');
-        setStopForm({ name_en: '', name_ar: '', lat: 0, lng: 0, stop_type: 'both', stop_order: (routeStopsMap[routeId]?.length || 0) + 1, arrival_time: '' });
+        setStopForm({ name_en: '', name_ar: '', lat: 0, lng: 0, stop_type: 'both', arrival_time: '' });
         await fetchStopsForRoute(routeId);
       }
     }
@@ -315,7 +315,7 @@ const AdminPanel = () => {
       lat: stop.lat,
       lng: stop.lng,
       stop_type: stop.stop_type,
-      stop_order: stop.stop_order,
+      
       arrival_time: stop.arrival_time || '',
     });
   };
@@ -869,7 +869,7 @@ const AdminPanel = () => {
                           {editingStopId ? (lang === 'ar' ? 'تحديث' : 'Update Stop') : (lang === 'ar' ? 'إضافة' : 'Add Stop')}
                         </Button>
                         {editingStopId && (
-                          <Button size="sm" variant="outline" onClick={() => { setEditingStopId(null); setStopForm({ name_en: '', name_ar: '', lat: 0, lng: 0, stop_type: 'both', stop_order: (routeStopsMap[route.id]?.length || 0), arrival_time: '' }); }}>
+                          <Button size="sm" variant="outline" onClick={() => { setEditingStopId(null); setStopForm({ name_en: '', name_ar: '', lat: 0, lng: 0, stop_type: 'both', arrival_time: '' }); }}>
                             {lang === 'ar' ? 'إلغاء' : 'Cancel'}
                           </Button>
                         )}
