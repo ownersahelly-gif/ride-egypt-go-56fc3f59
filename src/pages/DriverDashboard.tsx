@@ -75,6 +75,16 @@ const DriverDashboard = () => {
     ? ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
     : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  const scheduleRoutePreview = selectedRouteForSchedule || allRoutes.find((routeItem: any) => routeItem.id === scheduleForm.route_id) || null;
+  const scheduleRouteStops = scheduleRoutePreview?.stops
+    ? [...scheduleRoutePreview.stops].sort((a: any, b: any) => a.stop_order - b.stop_order)
+    : [];
+  const canShowScheduleRouteMap =
+    scheduleRoutePreview?.origin_lat != null &&
+    scheduleRoutePreview?.origin_lng != null &&
+    scheduleRoutePreview?.destination_lat != null &&
+    scheduleRoutePreview?.destination_lng != null;
+
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
