@@ -229,6 +229,53 @@ const AdminPanel = () => {
     toast.success('Route deactivated');
   };
 
+  // --- Stops management ---
+  const fetchStopsForRoute = async (routeId: string) => {
+    const { data } = await supabase.from('stops').select('*').eq('route_id', routeId).order('stop_order');
+    setRouteStopsMap(prev => ({ ...prev, [routeId]: data || [] }));
+  };
+
+  const toggleRouteStops = async (routeId: string) => {
+    if (expandedRouteStops === routeId) {
+      setExpandedRouteStops(null);
+      return;
+    }
+    setExpandedRouteStops(routeId);
+    setStopForm({ name_en: '', name_ar: '', lat: 0, lng: 0, stop_type: 'both', stop_order: (routeStopsMap[routeId]?.length || 0) });
+    if (!routeStopsMap[routeId]) await fetchStopsForRoute(routeId);
+  };
+
+  const addStop = async (routeId: string) => {
+    if (!stopForm.name_en || !stopForm.name_ar) return;
+    setAddingStop(true);
+    const { error } = await supabase.from('stops').insert({
+      route_id: routeId,
+      name_en: stopForm.name_en,
+      name_ar: stopForm.name_ar,
+      lat: stopForm.lat,
+      lng: stopForm.lng,
+      stop_type: stopForm.stop_type,
+      stop_order: stopForm.stop_order,
+    });
+    if (error) toast.error(error.message);
+    else {
+      toast.success(lang === 'ar' ? 'تمت إضافة نقطة التوقف' : 'Stop added');
+      setStopForm({ name_en: '', name_ar: '', lat: 0, lng: 0, stop_type: 'both', stop_order: (routeStopsMap[routeId]?.length || 0) + 1 });
+      await fetchStopsForRoute(routeId);
+    }
+    setAddingStop(false);
+  };
+
+  const deleteStop = async (stopId: string, routeId: string) => {
+    const { error } = await supabase.from('stops').delete().eq('id', stopId);
+    if (error) toast.error(error.message);
+    else {
+      toast.success(lang === 'ar' ? 'تم حذف نقطة التوقف' : 'Stop deleted');
+      await fetchStopsForRoute(routeId);
+    }
+  };
+
+
   const seedTestData = async () => {
     try {
       const testRoutes = [
