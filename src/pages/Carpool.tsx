@@ -223,7 +223,7 @@ const Carpool = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-border bg-card">
+      <div className="flex border-b border-border bg-card shrink-0">
         {(['browse', 'my-rides', 'my-routes'] as const).map(t => (
           <button
             key={t}
@@ -242,7 +242,7 @@ const Carpool = () => {
         ))}
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
         {tab === 'browse' && (
           <>
             {/* Search From / To */}
