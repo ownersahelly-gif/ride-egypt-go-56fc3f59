@@ -1,4 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -260,64 +262,85 @@ const ActiveRide = () => {
 
   // Update driver location: Broadcast for instant passenger updates + DB writes for persistence
   useEffect(() => {
-    if (!shuttle?.id || !navigator.geolocation) return;
+    if (!shuttle?.id) return;
 
     let lastDbUpdate = 0;
-    const DB_THROTTLE_MS = 5000; // DB writes every 5s for persistence
-    const BROADCAST_THROTTLE_MS = 1000; // broadcast every 1s for instant tracking
+    const DB_THROTTLE_MS = 5000;
+    const BROADCAST_THROTTLE_MS = 1000;
     let lastBroadcast = 0;
+    let cancelled = false;
 
-    // Create a broadcast channel for instant location sharing
     const broadcastChannel = supabase.channel(`shuttle-live-${shuttle.id}`);
     broadcastChannel.subscribe();
 
-    const updateLocation = (pos: GeolocationPosition) => {
-      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      setDriverLocation(loc);
-
+    const handleLocation = (lat: number, lng: number) => {
+      if (cancelled) return;
+      setDriverLocation({ lat, lng });
       const now = Date.now();
 
-      // Broadcast instantly (throttled to 1s) — passengers receive this in real-time
       if (now - lastBroadcast >= BROADCAST_THROTTLE_MS) {
         lastBroadcast = now;
         broadcastChannel.send({
           type: 'broadcast',
           event: 'driver-location',
-          payload: { lat: loc.lat, lng: loc.lng, ts: now },
+          payload: { lat, lng, ts: now },
         });
       }
 
-      // DB write (throttled to 5s) — for persistence & fallback
       if (now - lastDbUpdate >= DB_THROTTLE_MS) {
         lastDbUpdate = now;
         supabase.from('shuttles').update({
-          current_lat: loc.lat,
-          current_lng: loc.lng,
+          current_lat: lat, current_lng: lng,
         }).eq('id', shuttle.id);
       }
     };
 
-    // watchPosition for instant updates
-    const watchId = navigator.geolocation.watchPosition(
-      updateLocation,
-      () => {},
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-    );
+    const isNative = Capacitor.isNativePlatform();
 
-    // Fallback: poll every 2s in case watchPosition fires slowly
-    const intervalId = setInterval(() => {
-      navigator.geolocation.getCurrentPosition(
-        updateLocation,
-        () => {},
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+    if (isNative) {
+      // Use Capacitor native GPS — accurate and not throttled in background
+      let watchId: string | undefined;
+      Geolocation.watchPosition(
+        { enableHighAccuracy: true, timeout: 10000, minimumUpdateInterval: 1000 },
+        (position, err) => {
+          if (position && !err) {
+            handleLocation(position.coords.latitude, position.coords.longitude);
+          }
+        }
+      ).then(id => { watchId = id; });
+
+      return () => {
+        cancelled = true;
+        if (watchId) Geolocation.clearWatch({ id: watchId });
+        supabase.removeChannel(broadcastChannel);
+      };
+    } else {
+      // Browser fallback
+      if (!navigator.geolocation) return;
+
+      const updateLocation = (pos: GeolocationPosition) => {
+        handleLocation(pos.coords.latitude, pos.coords.longitude);
+      };
+
+      const watchId = navigator.geolocation.watchPosition(
+        updateLocation, () => {},
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
       );
-    }, 2000);
 
-    return () => {
-      navigator.geolocation.clearWatch(watchId);
-      clearInterval(intervalId);
-      supabase.removeChannel(broadcastChannel);
-    };
+      const intervalId = setInterval(() => {
+        navigator.geolocation.getCurrentPosition(
+          updateLocation, () => {},
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+        );
+      }, 2000);
+
+      return () => {
+        cancelled = true;
+        navigator.geolocation.clearWatch(watchId);
+        clearInterval(intervalId);
+        supabase.removeChannel(broadcastChannel);
+      };
+    }
   }, [shuttle?.id]);
 
   // Auto-detect arrival at current stop
@@ -361,7 +384,32 @@ const ActiveRide = () => {
 
   const advanceToNextStop = () => {
     if (currentStopIndex < activeStops.length - 1) {
-      setCurrentStopIndex(prev => prev + 1);
+      const nextIndex = currentStopIndex + 1;
+      setCurrentStopIndex(nextIndex);
+
+      // Broadcast "heading to next stop" status for passengers
+      if (shuttle?.id && activeStops[nextIndex]) {
+        const nextStop = activeStops[nextIndex].stop;
+        const broadcastChannel = supabase.channel(`shuttle-live-${shuttle.id}`);
+        broadcastChannel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            broadcastChannel.send({
+              type: 'broadcast',
+              event: 'driver-location',
+              payload: {
+                lat: driverLocation?.lat || nextStop.lat,
+                lng: driverLocation?.lng || nextStop.lng,
+                ts: Date.now(),
+                headingToStopId: nextStop.id,
+                headingToStopNameEn: nextStop.name_en,
+                headingToStopNameAr: nextStop.name_ar,
+                headingToStopIndex: nextIndex,
+              },
+            });
+            setTimeout(() => supabase.removeChannel(broadcastChannel), 1000);
+          }
+        });
+      }
     }
   };
 
@@ -428,6 +476,44 @@ const ActiveRide = () => {
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'boarded', boarded_at: new Date().toISOString() } : b));
     setBoardingInput('');
     setVerifyingBooking(null);
+
+    // === BOARDING CODE = LOCATION ANCHOR ===
+    // Use the current stop's coordinates as the driver's confirmed location
+    if (currentActive && shuttle?.id) {
+      const stopLat = currentActive.stop.lat;
+      const stopLng = currentActive.stop.lng;
+      
+      // Update driver location state
+      setDriverLocation({ lat: stopLat, lng: stopLng });
+
+      // Broadcast stop coordinates as driver location (instant for passengers)
+      const broadcastChannel = supabase.channel(`shuttle-live-${shuttle.id}`);
+      broadcastChannel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          broadcastChannel.send({
+            type: 'broadcast',
+            event: 'driver-location',
+            payload: { 
+              lat: stopLat, 
+              lng: stopLng, 
+              ts: Date.now(),
+              stopId: currentActive.stop.id,
+              stopNameEn: currentActive.stop.name_en,
+              stopNameAr: currentActive.stop.name_ar,
+              stopIndex: currentStopIndex,
+            },
+          });
+          // Clean up after sending
+          setTimeout(() => supabase.removeChannel(broadcastChannel), 1000);
+        }
+      });
+
+      // Persist to DB for fallback
+      supabase.from('shuttles').update({
+        current_lat: stopLat,
+        current_lng: stopLng,
+      }).eq('id', shuttle.id);
+    }
 
     // Show payment info
     const amountDue = booking.payment_proof_url ? 0 : parseFloat(booking.total_price || 0);
