@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import RideChat from '@/components/RideChat';
 import { useToast } from '@/hooks/use-toast';
+import { useSmoothMarker } from '@/hooks/useSmoothMarker';
 
 interface PassengerStop {
   userId: string;
