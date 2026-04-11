@@ -305,6 +305,7 @@ const BookRide = () => {
     if (onRoute) {
       setResult({ ok: true, minutes: 0, onRoute: true });
       setValidating(false);
+      if (type === 'pickup') scrollToDropoff();
       return;
     }
 
@@ -316,6 +317,7 @@ const BookRide = () => {
       const deviation = await calcDeviation(origin, dest, point);
       const ok = deviation <= 5;
       setResult({ ok, minutes: Math.round(deviation * 10) / 10, onRoute: false });
+      if (ok && type === 'pickup') scrollToDropoff();
       if (!ok) {
         toast({
           title: lang === 'ar' ? 'موقع بعيد عن المسار' : 'Too far from route',
@@ -369,6 +371,13 @@ const BookRide = () => {
   const [uploadingProof, setUploadingProof] = useState(false);
   const [instapayPhone, setInstapayPhone] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropoffRef = useRef<HTMLDivElement>(null);
+
+  const scrollToDropoff = () => {
+    setTimeout(() => {
+      dropoffRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 200);
+  };
 
   // Fetch InstaPay phone number
   useEffect(() => {
@@ -687,7 +696,7 @@ const BookRide = () => {
         <div className="flex gap-2">
           <button
             onClick={() => {
-              if (isPickup) { setMode('start'); setCustomPickup(null); setPickupResult(null); }
+              if (isPickup) { setMode('start'); setCustomPickup(null); setPickupResult(null); scrollToDropoff(); }
               else { setMode('end'); setCustomDropoff(null); setDropoffResult(null); }
             }}
             className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
@@ -1096,7 +1105,9 @@ const BookRide = () => {
             {renderPointSelector('pickup', pickupMode, setPickupMode, customPickup, validatingPickup, pickupResult)}
 
             {/* Dropoff */}
+            <div ref={dropoffRef}>
             {renderPointSelector('dropoff', dropoffMode, setDropoffMode, customDropoff, validatingDropoff, dropoffResult)}
+            </div>
 
             {/* Trip Direction - only show based on ride direction */}
             <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
