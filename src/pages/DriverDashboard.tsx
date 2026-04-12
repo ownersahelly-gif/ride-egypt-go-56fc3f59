@@ -1353,6 +1353,15 @@ const DriverDashboard = () => {
                 const tripIsPast = tripDate < todayDate;
                 const isUpcoming = !tripIsExpired && !tripIsPast;
 
+                const tripDateObj = new Date(tripDate + 'T00:00:00');
+                const tripDayName = dayNames[tripDateObj.getDay()];
+                const tripDateFormatted = `${tripDateObj.getDate()}/${tripDateObj.getMonth() + 1}`;
+                const tripDayLabel = tripDate === todayDate 
+                  ? (lang === 'ar' ? 'اليوم' : 'Today')
+                  : tripDate === new Date(Date.now() + 86400000).toISOString().split('T')[0]
+                    ? (lang === 'ar' ? 'غداً' : 'Tomorrow')
+                    : `${tripDayName} ${tripDateFormatted}`;
+
                 return (
                   <div key={key} className={`bg-card border rounded-2xl overflow-hidden ${isUpcoming ? 'border-primary/20' : 'border-border opacity-60'}`}>
                     <div className="flex items-stretch">
@@ -1360,7 +1369,7 @@ const DriverDashboard = () => {
                         <div className="flex-1">
                           <p className="font-semibold text-foreground text-sm">{lang === 'ar' ? routeObj?.name_ar : routeObj?.name_en}</p>
                           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                            <span>{tripDate}</span>
+                            <span className="font-medium text-foreground">{tripDayLabel}</span>
                             <span>{formatTime12h(tripTime, lang)}</span>
                             <span>{activeBookings.length} {lang === 'ar' ? 'راكب' : 'passengers'}</span>
                           </div>
