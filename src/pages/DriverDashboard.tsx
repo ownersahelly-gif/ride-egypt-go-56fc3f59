@@ -1434,14 +1434,10 @@ const DriverDashboard = () => {
                           {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                         </div>
                       </button>
-                      {/* Delete button - only in Trips tab */}
+                      {/* Delete button - only in Trips tab, with warning */}
                       {isUpcoming && (
                         <button
-                          onClick={() => {
-                            // Find matching schedule and delete
-                            const matchSchedule = driverSchedules.find(s => s.route_id === key.split('__')[1]);
-                            if (matchSchedule) deleteSchedule(matchSchedule.id);
-                          }}
+                          onClick={() => handleDeleteTrip(key)}
                           className="px-3 flex items-center justify-center border-s border-border hover:bg-destructive/10 transition-colors text-destructive"
                           title={lang === 'ar' ? 'حذف' : 'Delete'}
                         >
