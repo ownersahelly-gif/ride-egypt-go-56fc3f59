@@ -179,6 +179,23 @@ const ActiveRide = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Real-time booking subscription — auto-refresh when bookings change
+  useEffect(() => {
+    if (!shuttle?.id) return;
+    const channel = supabase
+      .channel(`active-ride-bookings-${shuttle.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'bookings',
+        filter: `shuttle_id=eq.${shuttle.id}`,
+      }, () => {
+        fetchData();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [shuttle?.id, fetchData]);
+
   // Find nearest route stop to a given lat/lng
   const findNearestStop = useCallback((lat: number, lng: number): RouteStop | null => {
     if (!routeStops.length) return null;
