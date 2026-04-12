@@ -11,7 +11,7 @@ import PlacesAutocomplete from '@/components/PlacesAutocomplete';
 import MapView from '@/components/MapView';
 import {
   Building2, Copy, Users, DollarSign, Route, Plus, Loader2,
-  CheckCircle2, Clock, XCircle, MapPin, Trash2,
+  CheckCircle2, Clock, XCircle, MapPin, Trash2, Pencil,
   Globe, LogOut, ListOrdered, Package, ChevronUp, ChevronDown
 } from 'lucide-react';
 
@@ -36,6 +36,7 @@ const PartnerDashboard = () => {
 
   // Route request form (mirrors admin)
   const [showRouteForm, setShowRouteForm] = useState(false);
+  const [editingRouteId, setEditingRouteId] = useState<string | null>(null);
   const [routeForm, setRouteForm] = useState({
     name_en: '', name_ar: '',
     origin_name_en: '', origin_name_ar: '',
@@ -118,14 +119,33 @@ const PartnerDashboard = () => {
     setApplying(false);
   };
 
+  const resetRouteForm = () => {
+    setRouteForm({ name_en: '', name_ar: '', origin_name_en: '', origin_name_ar: '', origin_lat: 30.0444, origin_lng: 31.2357, destination_name_en: '', destination_name_ar: '', destination_lat: 30.0131, destination_lng: 31.2089, price: 25, estimated_duration_minutes: 30, stops: [] });
+    setEditingRouteId(null);
+  };
+
+  const handleEditRoute = (r: any) => {
+    const stops = Array.isArray(r.stops_json) ? r.stops_json : [];
+    setRouteForm({
+      name_en: r.name_en, name_ar: r.name_ar,
+      origin_name_en: r.origin_name, origin_name_ar: '',
+      destination_name_en: r.destination_name, destination_name_ar: '',
+      origin_lat: r.origin_lat, origin_lng: r.origin_lng,
+      destination_lat: r.destination_lat, destination_lng: r.destination_lng,
+      price: r.price, estimated_duration_minutes: r.estimated_duration_minutes,
+      stops: stops.map((s: any) => ({ name_en: s.name_en || '', name_ar: s.name_ar || '', lat: s.lat || 0, lng: s.lng || 0, stop_type: s.stop_type || 'both' })),
+    });
+    setEditingRouteId(r.id);
+    setShowRouteForm(true);
+  };
+
   const handleSubmitRoute = async () => {
     if (!routeForm.name_en || !routeForm.origin_name_en || !routeForm.destination_name_en) {
       toast({ title: lang === 'ar' ? 'يرجى ملء جميع الحقول' : 'Please fill all fields', variant: 'destructive' });
       return;
     }
     setSubmittingRoute(true);
-    const { error } = await supabase.from('partner_route_requests').insert({
-      partner_id: partner.id,
+    const payload = {
       name_en: routeForm.name_en,
       name_ar: routeForm.name_ar || routeForm.name_en,
       origin_name: routeForm.origin_name_en,
@@ -137,12 +157,20 @@ const PartnerDashboard = () => {
       price: routeForm.price,
       estimated_duration_minutes: routeForm.estimated_duration_minutes,
       stops_json: routeForm.stops,
-    });
+      status: 'pending' as const,
+    };
+
+    let error;
+    if (editingRouteId) {
+      ({ error } = await supabase.from('partner_route_requests').update(payload).eq('id', editingRouteId));
+    } else {
+      ({ error } = await supabase.from('partner_route_requests').insert({ ...payload, partner_id: partner.id }));
+    }
     if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
     else {
-      toast({ title: lang === 'ar' ? 'تم إرسال طلب المسار!' : 'Route request submitted!' });
+      toast({ title: lang === 'ar' ? (editingRouteId ? 'تم تحديث الطلب!' : 'تم إرسال طلب المسار!') : (editingRouteId ? 'Route request updated!' : 'Route request submitted!') });
       setShowRouteForm(false);
-      setRouteForm({ name_en: '', name_ar: '', origin_name_en: '', origin_name_ar: '', origin_lat: 30.0444, origin_lng: 31.2357, destination_name_en: '', destination_name_ar: '', destination_lat: 30.0131, destination_lng: 31.2089, price: 25, estimated_duration_minutes: 30, stops: [] });
+      resetRouteForm();
       fetchData();
     }
     setSubmittingRoute(false);
@@ -592,11 +620,16 @@ const PartnerDashboard = () => {
                     <div key={r.id} className="bg-card border border-border rounded-xl p-4">
                       <div className="flex items-center justify-between mb-1">
                         <p className="font-medium text-foreground text-sm">{r.name_en}</p>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          r.status === 'approved' ? 'bg-green-100 text-green-700' :
-                          r.status === 'rejected' ? 'bg-destructive/10 text-destructive' :
-                          'bg-amber-100 text-amber-700'
-                        }`}>{r.status}</span>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleEditRoute(r)}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            r.status === 'approved' ? 'bg-green-100 text-green-700' :
+                            r.status === 'rejected' ? 'bg-destructive/10 text-destructive' :
+                            'bg-amber-100 text-amber-700'
+                          }`}>{r.status}</span>
+                        </div>
                       </div>
                       <p className="text-xs text-muted-foreground">{r.origin_name} → {r.destination_name}</p>
                       <p className="text-xs text-muted-foreground">{r.price} EGP • {r.estimated_duration_minutes} min • {stops.length} stops</p>
