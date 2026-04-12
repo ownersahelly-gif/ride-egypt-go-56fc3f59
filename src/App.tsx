@@ -10,6 +10,7 @@ import Index from "./pages/Index.tsx";
 import Login from "./pages/Login.tsx";
 import Signup from "./pages/Signup.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
+import BookRide from "./pages/BookRide.tsx";
 import MyBookings from "./pages/MyBookings.tsx";
 import RequestRoute from "./pages/RequestRoute.tsx";
 import Profile from "./pages/Profile.tsx";
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/signup" element={<Signup />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/book" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/book-ride" element={<BookRide />} />
               <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
               <Route path="/request-route" element={<ProtectedRoute><RequestRoute /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
