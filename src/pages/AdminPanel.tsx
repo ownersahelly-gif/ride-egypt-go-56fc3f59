@@ -69,6 +69,11 @@ const AdminPanel = () => {
   const [contentSettings, setContentSettings] = useState<Record<string, string>>({});
   const [savingContent, setSavingContent] = useState(false);
 
+  // Refund management
+  const [refunds, setRefunds] = useState<any[]>([]);
+  const [refundProfiles, setRefundProfiles] = useState<Record<string, any>>({});
+  const [processingRefund, setProcessingRefund] = useState<string | null>(null);
+
   // User filters
   const [userTypeFilter, setUserTypeFilter] = useState('all');
   const [userTimeFilter, setUserTimeFilter] = useState('all');
@@ -181,6 +186,16 @@ const AdminPanel = () => {
       activeDrivers: (shuttlesRes.data || []).filter(s => s.status === 'active').length,
       pendingApps: (appsRes.data || []).filter(a => a.status === 'pending').length,
     });
+    // Fetch refunds
+    const { data: refundsData } = await supabase.from('refunds').select('*').order('created_at', { ascending: false });
+    setRefunds(refundsData || []);
+    const refundUserIds = [...new Set((refundsData || []).map((r: any) => r.user_id))];
+    if (refundUserIds.length > 0) {
+      const rpMap: Record<string, any> = {};
+      (profilesRes.data || []).filter((p: any) => refundUserIds.includes(p.user_id)).forEach((p: any) => { rpMap[p.user_id] = p; });
+      setRefundProfiles(rpMap);
+    }
+
     setLoading(false);
   };
 
