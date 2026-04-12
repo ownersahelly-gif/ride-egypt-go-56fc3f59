@@ -20,12 +20,17 @@ type AdminTab = 'routes' | 'drivers' | 'shuttles' | 'bookings' | 'analytics' | '
 
 const AdminPanel = () => {
   const { user, signOut } = useAuth();
-  const { t, lang, setLang } = useLanguage();
+  const { t, lang, setLang, appName } = useLanguage();
   const { toast: legacyToast } = useToast();
 
   const [tab, setTab] = useState<AdminTab>('analytics');
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // App name settings
+  const [appNameEnSetting, setAppNameEnSetting] = useState('Massar');
+  const [appNameArSetting, setAppNameArSetting] = useState('مسار');
+  const [savingAppName, setSavingAppName] = useState(false);
 
   // InstaPay settings
   const [instapayPhone, setInstapayPhone] = useState('');
@@ -104,6 +109,14 @@ const AdminPanel = () => {
     }
 
     if (settingsRes.data) setInstapayPhone(settingsRes.data.value);
+    // Fetch app name settings
+    const { data: appNameData } = await supabase.from('app_settings').select('key, value').in('key', ['app_name_en', 'app_name_ar']);
+    if (appNameData) {
+      appNameData.forEach((row: any) => {
+        if (row.key === 'app_name_en') setAppNameEnSetting(row.value);
+        if (row.key === 'app_name_ar') setAppNameArSetting(row.value);
+      });
+    }
     // Fetch global waiting time
     const { data: waitData } = await supabase.from('app_settings').select('value').eq('key', 'stop_waiting_time_minutes').single();
     if (waitData) setGlobalWaitingTime(waitData.value);
@@ -166,6 +179,20 @@ const AdminPanel = () => {
     if (error) toast.error(error.message);
     else toast.success(lang === 'ar' ? 'تم حفظ رقم InstaPay' : 'InstaPay number saved');
     setSavingPhone(false);
+  };
+  const saveAppName = async () => {
+    setSavingAppName(true);
+    const { error: e1 } = await supabase.from('app_settings').upsert(
+      { key: 'app_name_en', value: appNameEnSetting },
+      { onConflict: 'key' }
+    );
+    const { error: e2 } = await supabase.from('app_settings').upsert(
+      { key: 'app_name_ar', value: appNameArSetting },
+      { onConflict: 'key' }
+    );
+    if (e1 || e2) toast.error((e1 || e2)!.message);
+    else toast.success(lang === 'ar' ? 'تم حفظ اسم التطبيق - أعد تحميل الصفحة لرؤية التغييرات' : 'App name saved - reload the page to see changes');
+    setSavingAppName(false);
   };
 
   const createRoute = async () => {
@@ -542,7 +569,7 @@ const AdminPanel = () => {
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-3">
             <Shield className="w-6 h-6 text-primary" />
-            <Link to="/" className="text-xl font-bold text-primary">{lang === 'ar' ? 'مسار' : 'Massar'}</Link>
+            <Link to="/" className="text-xl font-bold text-primary">{appName}</Link>
             <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Admin</span>
           </div>
           <div className="flex items-center gap-2">
@@ -1216,6 +1243,42 @@ const AdminPanel = () => {
         {tab === 'settings' && (
           <div className="space-y-6">
             <h2 className="text-xl font-bold text-foreground">{lang === 'ar' ? 'الإعدادات' : 'Settings'}</h2>
+
+            {/* App Name Settings */}
+            <div className="bg-card border border-border rounded-xl p-6 max-w-lg">
+              <h3 className="font-semibold text-foreground mb-1 flex items-center gap-2">
+                <Edit className="w-5 h-5 text-primary" />
+                {lang === 'ar' ? 'اسم التطبيق' : 'App Name'}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {lang === 'ar'
+                  ? 'غيّر اسم التطبيق الذي يظهر للمستخدمين في كل مكان'
+                  : 'Change the app name shown to users everywhere'}
+              </p>
+              <div className="space-y-3">
+                <div>
+                  <Label>{lang === 'ar' ? 'الاسم بالإنجليزية' : 'English Name'}</Label>
+                  <Input
+                    value={appNameEnSetting}
+                    onChange={(e) => setAppNameEnSetting(e.target.value)}
+                    placeholder="Massar"
+                    dir="ltr"
+                  />
+                </div>
+                <div>
+                  <Label>{lang === 'ar' ? 'الاسم بالعربية' : 'Arabic Name'}</Label>
+                  <Input
+                    value={appNameArSetting}
+                    onChange={(e) => setAppNameArSetting(e.target.value)}
+                    placeholder="مسار"
+                    dir="rtl"
+                  />
+                </div>
+                <Button onClick={saveAppName} disabled={savingAppName}>
+                  {savingAppName ? <Loader2 className="w-4 h-4 animate-spin" /> : (lang === 'ar' ? 'حفظ' : 'Save')}
+                </Button>
+              </div>
+            </div>
 
             <div className="bg-card border border-border rounded-xl p-6 max-w-lg">
               <h3 className="font-semibold text-foreground mb-1 flex items-center gap-2">
