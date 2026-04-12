@@ -798,6 +798,10 @@ const Dashboard = () => {
 
         {step === 'details' && selectedRide && (
           <div className="p-4 space-y-4">
+            <Button variant="ghost" size="sm" className="rounded-full gap-1" onClick={() => { setStep('results'); setSelectedRide(null); setRouteDirections(null); setSelectedPickupStop(null); setSelectedDropoffStop(null); }}>
+              <Back className="w-4 h-4" />
+              <span className="text-sm">{lang === 'ar' ? 'رجوع' : 'Back'}</span>
+            </Button>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
                 {driverProfile?.avatar_url ? (<img src={driverProfile.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" />) : (<UserIcon className="w-6 h-6 text-primary" />)}
