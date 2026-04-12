@@ -769,6 +769,13 @@ const Dashboard = () => {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-foreground text-sm truncate">{ride.driver_profile?.full_name || (lang === 'ar' ? 'سائق' : 'Driver')}</p>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground"><Car className="w-3 h-3" /><span>{ride.shuttle_info?.vehicle_model}</span></div>
+                        {driverRatings[ride.driver_id] && (
+                          <div className="flex items-center gap-1 text-xs mt-0.5">
+                            <Star className="w-3 h-3 fill-secondary text-secondary" />
+                            <span className="font-medium text-foreground">{driverRatings[ride.driver_id].avg.toFixed(1)}</span>
+                            <span className="text-muted-foreground">({driverRatings[ride.driver_id].count})</span>
+                          </div>
+                        )}
                       </div>
                       <div className="text-end"><span className="text-lg font-bold text-primary">{ride.routes?.price ?? '...'} EGP</span></div>
                     </div>
