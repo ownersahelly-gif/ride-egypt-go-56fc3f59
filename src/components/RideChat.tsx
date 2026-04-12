@@ -29,7 +29,7 @@ const playMsgSound = () => {
   } catch { /* Audio not available */ }
 };
 
-const RideChat = ({ bookingId, otherName, isOpen, onClose }: RideChatProps) => {
+const RideChat = ({ bookingId, otherName, isOpen, onClose, onRead }: RideChatProps & { onRead?: () => void }) => {
   const { user } = useAuth();
   const { lang } = useLanguage();
   const [messages, setMessages] = useState<any[]>([]);
@@ -45,7 +45,19 @@ const RideChat = ({ bookingId, otherName, isOpen, onClose }: RideChatProps) => {
       .select('*')
       .eq('booking_id', bookingId)
       .order('created_at', { ascending: true })
-      .then(({ data }) => setMessages(data || []));
+      .then(({ data }) => {
+        setMessages(data || []);
+        // Mark unread messages as read
+        if (user) {
+          supabase
+            .from('ride_messages')
+            .update({ is_read: true })
+            .eq('booking_id', bookingId)
+            .neq('sender_id', user.id)
+            .eq('is_read', false)
+            .then(() => onRead?.());
+        }
+      });
 
     // Subscribe to realtime
     const channel = supabase

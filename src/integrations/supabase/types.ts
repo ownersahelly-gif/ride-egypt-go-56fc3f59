@@ -422,6 +422,33 @@ export type Database = {
         }
         Relationships: []
       }
+      device_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       driver_applications: {
         Row: {
           car_license_url: string | null
@@ -777,6 +804,7 @@ export type Database = {
           booking_id: string
           created_at: string
           id: string
+          is_read: boolean
           message: string
           sender_id: string
         }
@@ -784,6 +812,7 @@ export type Database = {
           booking_id: string
           created_at?: string
           id?: string
+          is_read?: boolean
           message: string
           sender_id: string
         }
@@ -791,6 +820,7 @@ export type Database = {
           booking_id?: string
           created_at?: string
           id?: string
+          is_read?: boolean
           message?: string
           sender_id?: string
         }
