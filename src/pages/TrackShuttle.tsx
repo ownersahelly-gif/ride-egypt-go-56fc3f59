@@ -686,6 +686,21 @@ const TrackShuttle = () => {
                 </div>
               )}
 
+              {/* Navigate to pickup */}
+              {myPickupLat && myPickupLng && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${myPickupLat},${myPickupLng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Button className="w-full" size="lg">
+                    <Navigation className="w-4 h-4 me-2" />
+                    {lang === 'ar' ? 'اذهب لنقطة الصعود' : 'Navigate to Pickup'}
+                  </Button>
+                </a>
+              )}
+
               {/* Route info compact */}
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <MapPin className="w-3 h-3 text-green-600 shrink-0" />
