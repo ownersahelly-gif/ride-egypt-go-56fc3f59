@@ -352,7 +352,7 @@ const MyBookings = () => {
                   )}
 
                   {/* Boarding code */}
-                  {booking.boarding_code && ['confirmed', 'pending'].includes(booking.status) && (
+                  {booking.boarding_code && ['confirmed', 'pending'].includes(booking.status) && !isExpired && (
                     <div className="bg-surface rounded-lg p-3 mb-3 flex items-center gap-3">
                       <Key className="w-5 h-5 text-primary" />
                       <div>
