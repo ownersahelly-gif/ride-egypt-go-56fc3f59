@@ -14,7 +14,7 @@ import {
   ChevronLeft, ChevronRight, Users, MapPin, MessageCircle,
   CheckCircle2, Navigation, Loader2, UserCheck, LogOut as DropOff,
   Phone, Clock, AlertCircle, Flag, SkipForward, ArrowRight, Undo2,
-  ExternalLink, DollarSign
+  ExternalLink, DollarSign, TrendingUp, X
 } from 'lucide-react';
 
 interface RouteStop {
@@ -79,7 +79,9 @@ const ActiveRide = () => {
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [arrivedAt, setArrivedAt] = useState<number | null>(null);
   const [waitSeconds, setWaitSeconds] = useState(0);
-  const [waitTimeMinutes, setWaitTimeMinutes] = useState(1); // default 1 min, fetched from app_settings
+  const [waitTimeMinutes, setWaitTimeMinutes] = useState(1);
+  const [showEndRideDialog, setShowEndRideDialog] = useState(false);
+  const [showEarningsSummary, setShowEarningsSummary] = useState(false);
   const reachedStopsRef = useRef<Set<number>>(new Set());
 
   const fetchData = useCallback(async () => {
