@@ -761,32 +761,27 @@ const DriverDashboard = () => {
                           <div key={key} className={`bg-card border rounded-2xl overflow-hidden transition-all ${
                             isExpired ? 'border-destructive/30 opacity-70' : slot.isPast ? 'border-border' : slot.direction === 'go' ? 'border-green-200' : 'border-blue-200'
                           }`}>
-                            <div className="flex items-stretch">
-                              <button
+                            <button
                                 onClick={() => setExpandedUpcoming(isExpanded ? null : key)}
-                                className="flex-1 p-4 text-start hover:bg-muted/30 transition-colors"
+                                className="w-full p-4 text-start hover:bg-muted/30 transition-colors"
                               >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold ${
-                                    slot.isPast ? 'bg-muted text-muted-foreground' : slot.direction === 'go' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                                    slot.direction === 'go' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                                   }`}>
-                                    {slot.isPast ? '✓' : lang === 'ar' ? '←' : '→'}
+                                    {lang === 'ar' ? '←' : '→'}
                                   </div>
                                   <div>
                                     <div className="flex items-center gap-2">
                                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                                        isExpired ? 'bg-destructive/10 text-destructive' : slot.isPast ? 'bg-muted text-muted-foreground' : slot.direction === 'go' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                                        slot.direction === 'go' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                                       }`}>
-                                        {isExpired
-                                          ? (lang === 'ar' ? '⚠ فات الموعد' : '⚠ Expired')
-                                          : slot.isPast
-                                          ? (lang === 'ar' ? 'انتهت' : 'Passed')
-                                          : slot.direction === 'go' ? (lang === 'ar' ? 'ذهاب' : 'Going') : (lang === 'ar' ? 'عودة' : 'Returning')}
+                                        {slot.direction === 'go' ? (lang === 'ar' ? 'ذهاب' : 'Going') : (lang === 'ar' ? 'عودة' : 'Returning')}
                                       </span>
                                       <span className="text-xs text-muted-foreground">{getDayLabel(slot.dayOffset, slot.day)}</span>
                                     </div>
-                                    <p className={`text-sm font-medium mt-0.5 ${slot.isPast ? 'text-muted-foreground' : 'text-foreground'}`}>
+                                    <p className="text-sm font-medium mt-0.5 text-foreground">
                                       {slot.direction === 'go'
                                         ? `${displayOrigin} ${lang === 'ar' ? '←' : '→'} ${displayDest}`
                                         : `${displayDest} ${lang === 'ar' ? '←' : '→'} ${displayOrigin}`}
@@ -796,21 +791,12 @@ const DriverDashboard = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div className="text-end">
-                                    <p className={`text-lg font-bold ${slot.isPast ? 'text-muted-foreground' : 'text-foreground'}`}>{formatTime12h(slot.time, lang)}</p>
+                                    <p className="text-lg font-bold text-foreground">{formatTime12h(slot.time, lang)}</p>
                                   </div>
                                   {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                                 </div>
                               </div>
                             </button>
-                              {/* Delete button on card */}
-                              <button
-                                onClick={() => deleteSchedule(slot.scheduleId)}
-                                className="px-2 flex items-center justify-center border-s border-border hover:bg-destructive/10 transition-colors text-destructive"
-                                title={lang === 'ar' ? 'حذف الرحلة' : 'Remove trip'}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
                             {/* Go to trips button below card */}
                             <button
                               onClick={() => setTab('trips')}
