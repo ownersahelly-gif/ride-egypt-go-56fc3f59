@@ -1014,12 +1014,86 @@ const ActiveRide = () => {
       {/* Complete Ride button */}
       {boardedCount > 0 && !allCompleted && (
         <div className="border-t border-border bg-card p-4">
-          <Button className="w-full" size="lg" variant="destructive" onClick={completeRide}>
+          <Button className="w-full" size="lg" variant="destructive" onClick={() => setShowEndRideDialog(true)}>
             <Flag className="w-5 h-5 me-2" />
             {lang === 'ar'
               ? `إنهاء الرحلة (${boardedCount} راكب)`
               : `Complete Ride (${boardedCount} passengers)`}
           </Button>
+        </div>
+      )}
+
+      {/* End Ride Confirmation Dialog */}
+      {showEndRideDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-card border border-border rounded-2xl p-6 w-[90%] max-w-sm shadow-xl space-y-4">
+            <div className="text-center">
+              <Flag className="w-12 h-12 text-destructive mx-auto mb-2" />
+              <h3 className="text-lg font-bold text-foreground">
+                {lang === 'ar' ? 'إنهاء الرحلة؟' : 'End Ride?'}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {lang === 'ar'
+                  ? `سيتم إنزال ${boardedCount} راكب وإنهاء الرحلة.`
+                  : `This will drop off ${boardedCount} passenger${boardedCount > 1 ? 's' : ''} and end the ride.`}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setShowEndRideDialog(false)}>
+                {lang === 'ar' ? 'لا، ارجع' : 'No, Go Back'}
+              </Button>
+              <Button variant="destructive" className="flex-1" onClick={completeRide}>
+                {lang === 'ar' ? 'نعم، أنهِ الرحلة' : 'Yes, End Ride'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Earnings Summary Modal */}
+      {showEarningsSummary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-card border border-border rounded-2xl p-6 w-[90%] max-w-sm shadow-xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-primary" />
+                {lang === 'ar' ? 'ملخص الرحلة' : 'Ride Summary'}
+              </h3>
+              <Button variant="ghost" size="icon" onClick={() => setShowEarningsSummary(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="text-center py-4">
+              <p className="text-4xl font-bold text-primary">{totalEarnings} EGP</p>
+              <p className="text-sm text-muted-foreground mt-1">{lang === 'ar' ? 'إجمالي أرباح اليوم' : "Today's Total Earnings"}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-surface rounded-xl p-3 text-center">
+                <p className="text-xl font-bold text-foreground">{completedCount}</p>
+                <p className="text-xs text-muted-foreground">{lang === 'ar' ? 'راكب' : 'Passengers'}</p>
+              </div>
+              <div className="bg-surface rounded-xl p-3 text-center">
+                <p className="text-xl font-bold text-foreground">{activeStops.length}</p>
+                <p className="text-xs text-muted-foreground">{lang === 'ar' ? 'توقف' : 'Stops'}</p>
+              </div>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{lang === 'ar' ? '💵 كاش' : '💵 Cash'}</span>
+                <span className="font-medium text-foreground">{cashEarnings} EGP</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{lang === 'ar' ? '📱 إلكتروني' : '📱 Online'}</span>
+                <span className="font-medium text-foreground">{onlineEarnings} EGP</span>
+              </div>
+            </div>
+            <Link to="/driver-dashboard" className="block">
+              <Button className="w-full" size="lg">
+                <CheckCircle2 className="w-4 h-4 me-2" />
+                {lang === 'ar' ? 'العودة للرئيسية' : 'Back to Dashboard'}
+              </Button>
+            </Link>
+          </div>
         </div>
       )}
 
