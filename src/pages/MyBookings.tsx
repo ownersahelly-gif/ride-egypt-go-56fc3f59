@@ -485,7 +485,7 @@ const MyBookings = () => {
                           {cancellingId === booking.id ? (lang === 'ar' ? 'جاري...' : 'Cancelling...') : t('booking.cancel')}
                         </Button>
                       )}
-                      {booking.status === 'cancelled' && !booking.skipped_at && parseFloat(booking.total_price || 0) > 0 && (
+                      {(booking.status === 'cancelled' || isExpired) && !booking.skipped_at && parseFloat(booking.total_price || 0) > 0 && (
                         <Button variant="outline" size="sm" onClick={() => requestRefund(booking)}
                           disabled={requestingRefund === booking.id}>
                           <RotateCcw className="w-3.5 h-3.5 me-1" />
