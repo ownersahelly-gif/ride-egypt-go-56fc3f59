@@ -373,6 +373,18 @@ const DriverDashboard = () => {
 
   const quickAddTimeSlot = async () => {
     if (!user || !shuttle || !quickAddDay) return;
+    // Prevent adding past times for today
+    const todayDow = new Date().getDay();
+    if (quickAddDay.day === todayDow) {
+      const now = new Date();
+      const [hh, mm] = quickAddTime.split(':').map(Number);
+      const slotTime = new Date();
+      slotTime.setHours(hh, mm, 0, 0);
+      if (slotTime.getTime() <= now.getTime()) {
+        toast({ title: lang === 'ar' ? 'الوقت قد مضى' : 'Time has already passed', description: lang === 'ar' ? 'اختر وقتاً في المستقبل' : 'Please choose a future time', variant: 'destructive' });
+        return;
+      }
+    }
     setSavingQuickAdd(true);
     const entry = {
       driver_id: user.id, route_id: quickAddDay.routeId, shuttle_id: quickAddDay.shuttleId,
@@ -459,7 +471,7 @@ const DriverDashboard = () => {
   };
 
   return (
-    <div className="h-screen bg-surface flex flex-col overflow-hidden">
+    <div className="h-screen bg-surface flex flex-col overflow-hidden max-w-full">
       <header className="bg-card border-b border-border shrink-0 z-40 safe-area-top">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           <Link to="/" className="text-2xl font-bold text-primary font-arabic">{appName}</Link>
@@ -471,7 +483,7 @@ const DriverDashboard = () => {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto container mx-auto px-4 py-6 max-w-2xl pb-24">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden container mx-auto px-4 py-6 max-w-2xl pb-24">
         {!shuttle && (
           <div className="bg-card rounded-2xl border border-border p-12 text-center">
             <Clock className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
@@ -483,13 +495,13 @@ const DriverDashboard = () => {
         {shuttle && (
           <>
             {/* Tab bar */}
-            <div className="flex gap-1 bg-card border border-border rounded-xl p-1 mb-6">
+            <div className="flex gap-1 bg-card border border-border rounded-xl p-1 mb-6 overflow-x-auto no-scrollbar">
               {tabs.map(({ key, icon: Icon, label }) => (
                 <button key={key} onClick={() => { setTab(key); if (key === 'home') ackBookings(); }}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors relative ${
+                  className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 px-3 py-3 rounded-lg text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap ${
                     tab === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
                   }`}>
-                  <Icon className="w-4 h-4" />{label}
+                  <Icon className="w-4 h-4 shrink-0" /><span className="truncate">{label}</span>
                   {key === 'home' && newBookingsCount > 0 && tab !== 'home' && (
                     <span className="absolute -top-1 -end-1 w-5 h-5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">{newBookingsCount}</span>
                   )}
@@ -797,15 +809,15 @@ const DriverDashboard = () => {
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
-                              {/* Go to trips page button */}
-                              <button
-                                onClick={() => setTab('trips')}
-                                className="px-2 flex items-center justify-center border-s border-border hover:bg-primary/10 transition-colors text-primary"
-                                title={lang === 'ar' ? 'افتح الرحلات' : 'Go to Trips'}
-                              >
-                                <ArrowRight className="w-4 h-4" />
-                              </button>
                             </div>
+                            {/* Go to trips button below card */}
+                            <button
+                              onClick={() => setTab('trips')}
+                              className="w-full flex items-center justify-center gap-2 py-2.5 border-t border-border text-xs font-medium text-primary hover:bg-primary/5 transition-colors"
+                            >
+                              {lang === 'ar' ? 'افتح صفحة الرحلات' : 'Go to Trips Page'}
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
                             {isExpanded && (
                               <div className="border-t border-border p-4 space-y-3">
                                 {isTestTrip && (
@@ -1291,20 +1303,46 @@ const DriverDashboard = () => {
 
             {/* ==================== TRIPS TAB ==================== */}
             {tab === 'trips' && (() => {
-              // Filter out bookings whose route no longer exists or is inactive
+              // Build trip entries from both bookings AND scheduled ride instances (from driverSchedules)
               const validBookings = bookings.filter(b => b.routes != null);
-              const grouped: Record<string, any[]> = {};
+              const grouped: Record<string, { bookings: any[]; routeInfo: any; date: string; time: string }> = {};
+              
+              // Add bookings
               validBookings.forEach(b => {
                 const key = `${b.scheduled_date}__${b.route_id || 'no-route'}__${b.scheduled_time}`;
-                if (!grouped[key]) grouped[key] = [];
-                grouped[key].push(b);
+                if (!grouped[key]) grouped[key] = { bookings: [], routeInfo: b.routes, date: b.scheduled_date, time: b.scheduled_time };
+                grouped[key].bookings.push(b);
               });
+
+              // Add scheduled trips that have no bookings yet
+              const now = new Date();
+              const todayDow = now.getDay();
+              for (const s of driverSchedules) {
+                // Generate upcoming dates for this schedule
+                for (let w = 0; w < 4; w++) {
+                  for (let d = 0; d < 7; d++) {
+                    const date = new Date(now);
+                    date.setDate(now.getDate() + (w * 7) + d);
+                    if (date.getDay() === s.day_of_week) {
+                      const dateStr = date.toISOString().split('T')[0];
+                      if (s.departure_time) {
+                        const key = `${dateStr}__${s.route_id}__${s.departure_time}`;
+                        if (!grouped[key]) grouped[key] = { bookings: [], routeInfo: s.routes, date: dateStr, time: s.departure_time };
+                      }
+                      if (s.return_time) {
+                        const key = `${dateStr}__${s.route_id}__${s.return_time}`;
+                        if (!grouped[key]) grouped[key] = { bookings: [], routeInfo: s.routes, date: dateStr, time: s.return_time };
+                      }
+                    }
+                  }
+                }
+              }
+
               const sortedKeys = Object.keys(grouped).sort((a, b) => {
-                // Sort by date descending, then time descending (most recent first)
                 const [dateA, , timeA] = a.split('__');
                 const [dateB, , timeB] = b.split('__');
-                if (dateA !== dateB) return dateB.localeCompare(dateA);
-                return (timeB || '').localeCompare(timeA || '');
+                if (dateA !== dateB) return dateA.localeCompare(dateB);
+                return (timeA || '').localeCompare(timeB || '');
               });
 
               return (
@@ -1312,41 +1350,43 @@ const DriverDashboard = () => {
                   {sortedKeys.length === 0 ? (
                     <div className="bg-card border border-border rounded-xl p-12 text-center text-muted-foreground">{lang === 'ar' ? 'لا توجد رحلات بعد' : 'No trips yet'}</div>
                   ) : sortedKeys.map(key => {
-                    const group = grouped[key];
-                    const first = group[0];
-                    const routeObj = first.routes;
+                    const entry = grouped[key];
+                    const group = entry.bookings;
+                    const routeObj = entry.routeInfo;
+                    const first = group.length > 0 ? group[0] : null;
                     const isExpanded = expandedTrips.has(key);
-                    const allBookings = group; // Keep all bookings visible including cancelled
                     const activeBookings = group.filter((b: any) => b.status !== 'cancelled');
                     const routeOrigin = { lat: routeObj?.origin_lat || 0, lng: routeObj?.origin_lng || 0 };
                     const routeDestination = { lat: routeObj?.destination_lat || 0, lng: routeObj?.destination_lng || 0 };
                     const optimizedOrder = isExpanded ? optimizePassengerOrder(activeBookings, routeOrigin, routeDestination) : [];
                     const validWaypoints = optimizedOrder.filter(wp => wp.coords.lat !== 0 && wp.coords.lng !== 0);
 
-                    // Check if this trip is expired (30+ min past departure)
-                    const [expH, expM] = (first.scheduled_time || '00:00').split(':').map(Number);
-                    const expDep = new Date(first.scheduled_date + 'T00:00:00');
+                    const tripDate = entry.date;
+                    const tripTime = entry.time || '00:00';
+                    const [expH, expM] = tripTime.split(':').map(Number);
+                    const expDep = new Date(tripDate + 'T00:00:00');
                     expDep.setHours(expH, expM, 0);
                     const tripIsExpired = (Date.now() - expDep.getTime()) > 30 * 60 * 1000;
-                    const tripIsPast = first.scheduled_date < new Date().toISOString().split('T')[0];
+                    const tripIsPast = tripDate < new Date().toISOString().split('T')[0];
 
                     return (
-                      <div key={key} className={`bg-card border rounded-2xl overflow-hidden ${tripIsExpired || tripIsPast ? 'border-destructive/30' : 'border-border'}`}>
+                      <div key={key} className={`bg-card border rounded-2xl overflow-hidden ${tripIsExpired || tripIsPast ? 'border-border opacity-60' : 'border-primary/20'}`}>
                         <button onClick={() => toggleTrip(key)} className="w-full flex items-center justify-between p-4 text-start hover:bg-muted/30 transition-colors">
                           <div className="flex-1">
                             <p className="font-semibold text-foreground text-sm">{lang === 'ar' ? routeObj?.name_ar : routeObj?.name_en}</p>
                             <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                              <span>{first.scheduled_date}</span>
-                              <span>{formatTime12h(first.scheduled_time, lang)}</span>
-                              <span>{activeBookings.filter((b: any) => b.trip_direction === 'go' || b.trip_direction === 'both').length} {lang === 'ar' ? 'ذهاب' : 'go'}</span>
-                              <span>{activeBookings.filter((b: any) => b.trip_direction === 'return' || b.trip_direction === 'both').length} {lang === 'ar' ? 'عودة' : 'back'}</span>
+                              <span>{tripDate}</span>
+                              <span>{formatTime12h(tripTime, lang)}</span>
+                              <span>{activeBookings.length} {lang === 'ar' ? 'راكب' : 'passengers'}</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             {(tripIsExpired || tripIsPast) ? (
-                              <span className="text-xs px-2 py-1 rounded-full bg-destructive/10 text-destructive">{lang === 'ar' ? 'ملغي' : 'Cancelled'}</span>
+                              <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">{lang === 'ar' ? 'انتهت' : 'Past'}</span>
+                            ) : activeBookings.length > 0 ? (
+                              <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">{activeBookings.length} {lang === 'ar' ? 'حجز' : 'booked'}</span>
                             ) : (
-                              <span className={`text-xs px-2 py-1 rounded-full ${statusColors[first.status]}`}>{t(`booking.status.${first.status}`)}</span>
+                              <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">{lang === 'ar' ? 'بدون حجوزات' : 'No bookings'}</span>
                             )}
                             {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                           </div>
@@ -1354,10 +1394,9 @@ const DriverDashboard = () => {
 
                         {isExpanded && (() => {
                           const today = new Date().toISOString().split('T')[0];
-                          const isTripToday = first.scheduled_date === today;
-                          // Check 30-min expiry window
-                          const [tripH, tripM] = (first.scheduled_time || '00:00').split(':').map(Number);
-                          const tripDep = new Date(first.scheduled_date + 'T00:00:00');
+                          const isTripToday = tripDate === today;
+                          const [tripH, tripM] = tripTime.split(':').map(Number);
+                          const tripDep = new Date(tripDate + 'T00:00:00');
                           tripDep.setHours(tripH, tripM, 0);
                           const msSinceTripDep = Date.now() - tripDep.getTime();
                           const tripExpired = msSinceTripDep > 30 * 60 * 1000;
@@ -1382,6 +1421,14 @@ const DriverDashboard = () => {
                                   {lang === 'ar' ? 'ابدأ الرحلة الآن' : 'Start This Trip'}
                                 </Button>
                               </Link>
+                            )}
+                            {!tripExpired && !tripIsPast && activeBookings.length === 0 && (
+                              <div className="bg-muted/50 rounded-xl p-3 flex items-center gap-2">
+                                <Users className="w-4 h-4 text-muted-foreground" />
+                                <p className="text-sm text-muted-foreground">
+                                  {lang === 'ar' ? 'لا يوجد حجوزات بعد لهذه الرحلة' : 'No bookings yet for this trip'}
+                                </p>
+                              </div>
                             )}
                             {validWaypoints.length > 0 && (
                               <MapView
