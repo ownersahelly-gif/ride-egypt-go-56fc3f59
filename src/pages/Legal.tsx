@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Shield, FileText, MapPin, Database, Scale } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Shield, FileText, MapPin, Scale } from 'lucide-react';
 
-type Section = 'privacy' | 'terms' | 'location' | 'data' | 'licenses';
+type Section = 'privacy' | 'terms' | 'location' | 'licenses';
 
 const Legal = () => {
   const { lang, appName } = useLanguage();
@@ -17,7 +17,6 @@ const Legal = () => {
     { key: 'privacy', icon: <Shield className="w-4 h-4" />, label: { en: 'Privacy Policy', ar: 'سياسة الخصوصية' } },
     { key: 'terms', icon: <FileText className="w-4 h-4" />, label: { en: 'Terms of Service', ar: 'شروط الخدمة' } },
     { key: 'location', icon: <MapPin className="w-4 h-4" />, label: { en: 'Location Usage', ar: 'استخدام الموقع' } },
-    { key: 'data', icon: <Database className="w-4 h-4" />, label: { en: 'Data Providers', ar: 'مزودو البيانات' } },
     { key: 'licenses', icon: <Scale className="w-4 h-4" />, label: { en: 'Licenses', ar: 'التراخيص' } },
   ];
 
@@ -100,20 +99,27 @@ const Legal = () => {
           <ul className="list-disc list-inside space-y-1">
             <li>Prices are displayed before booking confirmation</li>
             <li>Payments are processed via InstaPay or wallet balance</li>
-            <li>Cancellation refunds follow our refund policy (50% if driver already departed)</li>
             <li>Bundle/package purchases are non-refundable once rides are used</li>
           </ul>
-          <h3 className="text-base font-semibold text-foreground">5. User Conduct</h3>
+          <h3 className="text-base font-semibold text-foreground">5. Cancellation & Refund Policy</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li><strong>Cancellation 24+ hours before departure:</strong> 50% refund issued to your wallet</li>
+            <li><strong>Cancellation within 24 hours of departure:</strong> No refund is issued</li>
+            <li><strong>Driver no-show (30+ min late):</strong> Full refund issued automatically</li>
+            <li><strong>Skipped by driver (no-show at pickup):</strong> 50% refund</li>
+            <li>All refunds are credited to your in-app wallet and reviewed by our team</li>
+          </ul>
+          <h3 className="text-base font-semibold text-foreground">6. User Conduct</h3>
           <p>Users must not: use the service for illegal purposes, harass drivers or other passengers, provide false identity documents, attempt to manipulate the booking system, or interfere with the app's operation.</p>
-          <h3 className="text-base font-semibold text-foreground">6. Driver Requirements</h3>
+          <h3 className="text-base font-semibold text-foreground">7. Driver Requirements</h3>
           <p>Drivers must maintain valid licenses, vehicle registration, and insurance. Vehicles must pass safety inspections. {appName} reserves the right to deactivate driver accounts for safety violations.</p>
-          <h3 className="text-base font-semibold text-foreground">7. Limitation of Liability</h3>
+          <h3 className="text-base font-semibold text-foreground">8. Limitation of Liability</h3>
           <p>{appName} acts as a platform connecting riders and drivers. We are not a transportation company. While we verify drivers and vehicles, we are not liable for incidents during rides beyond what is required by applicable Egyptian law.</p>
-          <h3 className="text-base font-semibold text-foreground">8. Intellectual Property</h3>
+          <h3 className="text-base font-semibold text-foreground">9. Intellectual Property</h3>
           <p>All content, trademarks, and technology in {appName} are owned by or licensed to us. You may not copy, modify, or distribute any part of the app without written permission.</p>
-          <h3 className="text-base font-semibold text-foreground">9. Termination</h3>
+          <h3 className="text-base font-semibold text-foreground">10. Termination</h3>
           <p>We may suspend or terminate your account for violations of these terms. You may delete your account at any time through the app.</p>
-          <h3 className="text-base font-semibold text-foreground">10. Governing Law</h3>
+          <h3 className="text-base font-semibold text-foreground">11. Governing Law</h3>
           <p>These terms are governed by the laws of the Arab Republic of Egypt. Disputes shall be resolved in Egyptian courts.</p>
         </div>
       ),
@@ -130,8 +136,15 @@ const Legal = () => {
           <ul className="list-disc list-inside space-y-1">
             <li>يتم عرض الأسعار قبل تأكيد الحجز</li>
             <li>تتم معالجة المدفوعات عبر InstaPay أو رصيد المحفظة</li>
-            <li>تتبع المبالغ المستردة سياسة الاسترداد الخاصة بنا</li>
             <li>مشتريات الباقات غير قابلة للاسترداد بمجرد استخدام الرحلات</li>
+          </ul>
+          <h3 className="text-base font-semibold text-foreground">5. سياسة الإلغاء والاسترداد</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li><strong>الإلغاء قبل 24+ ساعة من الموعد:</strong> استرداد 50% إلى محفظتك</li>
+            <li><strong>الإلغاء خلال 24 ساعة من الموعد:</strong> لا يتم إصدار استرداد</li>
+            <li><strong>عدم حضور السائق (تأخر 30+ دقيقة):</strong> استرداد كامل تلقائيًا</li>
+            <li><strong>تم تخطيك من السائق (عدم الحضور):</strong> استرداد 50%</li>
+            <li>جميع المبالغ المستردة تُضاف إلى محفظتك داخل التطبيق ويتم مراجعتها من فريقنا</li>
           </ul>
           <h3 className="text-base font-semibold text-foreground">5. سلوك المستخدم</h3>
           <p>يجب على المستخدمين عدم: استخدام الخدمة لأغراض غير قانونية، مضايقة السائقين أو الركاب الآخرين، تقديم وثائق هوية مزورة، أو التلاعب بنظام الحجز.</p>
@@ -209,42 +222,6 @@ const Legal = () => {
           </ul>
           <h3 className="text-base font-semibold text-foreground">وصول الأطراف الثالثة</h3>
           <p>يتم مشاركة بيانات الموقع مع Google Maps لعرض الخرائط والملاحة فقط.</p>
-        </div>
-      ),
-    },
-    data: {
-      en: (
-        <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
-          <p className="text-xs text-muted-foreground">Last updated: {lastUpdated}</p>
-          <h3 className="text-base font-semibold text-foreground">Third-Party Services & Data Providers</h3>
-          <p>{appName} uses the following third-party services to operate:</p>
-          <h3 className="text-base font-semibold text-foreground">Supabase (Database & Authentication)</h3>
-          <p>Hosts user accounts, ride data, and booking information. Data is stored in secure, encrypted cloud infrastructure. <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Supabase Privacy Policy</a></p>
-          <h3 className="text-base font-semibold text-foreground">Google Maps Platform</h3>
-          <p>Provides maps, geocoding, place search, and navigation. Location data is sent to Google for map rendering and directions. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Google Privacy Policy</a></p>
-          <h3 className="text-base font-semibold text-foreground">Bunny CDN (Media Storage)</h3>
-          <p>Stores user-uploaded images such as profile photos, driver documents, and payment proofs. <a href="https://bunny.net/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Bunny.net Privacy Policy</a></p>
-          <h3 className="text-base font-semibold text-foreground">Apple Push Notification Service (APNs)</h3>
-          <p>Delivers ride updates and booking notifications to your iOS device. Device tokens are stored to route notifications.</p>
-          <h3 className="text-base font-semibold text-foreground">Data Processing</h3>
-          <p>All third-party providers are bound by their respective privacy policies and data processing agreements. We only share the minimum data necessary for each service to function.</p>
-        </div>
-      ),
-      ar: (
-        <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
-          <p className="text-xs text-muted-foreground">آخر تحديث: {lastUpdated}</p>
-          <h3 className="text-base font-semibold text-foreground">الخدمات ومزودو البيانات من الأطراف الثالثة</h3>
-          <p>يستخدم {appName} الخدمات التالية من أطراف ثالثة للتشغيل:</p>
-          <h3 className="text-base font-semibold text-foreground">Supabase (قاعدة البيانات والمصادقة)</h3>
-          <p>يستضيف حسابات المستخدمين وبيانات الرحلات ومعلومات الحجز. يتم تخزين البيانات في بنية تحتية سحابية مشفرة وآمنة.</p>
-          <h3 className="text-base font-semibold text-foreground">Google Maps Platform</h3>
-          <p>يوفر الخرائط والترميز الجغرافي والبحث عن الأماكن والملاحة. يتم إرسال بيانات الموقع إلى Google لعرض الخرائط والاتجاهات.</p>
-          <h3 className="text-base font-semibold text-foreground">Bunny CDN (تخزين الوسائط)</h3>
-          <p>يخزن الصور التي يرفعها المستخدمون مثل صور الملف الشخصي ووثائق السائق وإثباتات الدفع.</p>
-          <h3 className="text-base font-semibold text-foreground">Apple Push Notification Service (APNs)</h3>
-          <p>يقدم تحديثات الرحلات وإشعارات الحجز إلى جهاز iOS الخاص بك.</p>
-          <h3 className="text-base font-semibold text-foreground">معالجة البيانات</h3>
-          <p>جميع مزودي الأطراف الثالثة ملزمون بسياسات الخصوصية واتفاقيات معالجة البيانات الخاصة بهم. نحن نشارك فقط الحد الأدنى من البيانات اللازمة لعمل كل خدمة.</p>
         </div>
       ),
     },
