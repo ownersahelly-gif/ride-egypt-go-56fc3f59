@@ -807,13 +807,47 @@ const DriverDashboard = () => {
                                   </div>
                                 )}
 
-                                {canStart && (
-                                  <Link to="/active-ride">
-                                    <Button className="w-full h-12 text-base rounded-xl" size="lg">
-                                      <Play className="w-5 h-5 me-2" />
-                                      {lang === 'ar' ? 'ابدأ الرحلة الآن' : 'Start This Trip'}
-                                    </Button>
-                                  </Link>
+                                {canStart && belowMinimum && (
+                                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                                    <div className="flex items-start gap-2">
+                                      <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                                      <div>
+                                        <p className="text-sm font-medium text-amber-800">
+                                          {lang === 'ar'
+                                            ? `الحد الأدنى ${minPassengers} ركاب — الحالي ${slotBookings.length} فقط`
+                                            : `Minimum ${minPassengers} passengers — only ${slotBookings.length} booked`}
+                                        </p>
+                                        <p className="text-xs text-amber-600 mt-1">
+                                          {lang === 'ar' ? 'هل تريد بدء الرحلة على أي حال؟' : 'Do you want to start the trip anyway?'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        className="flex-1 h-11 rounded-xl"
+                                        onClick={() => startTrip(slot)}
+                                        disabled={startingTrip}
+                                      >
+                                        {startingTrip ? <Loader2 className="w-4 h-4 animate-spin me-2" /> : <Play className="w-4 h-4 me-2" />}
+                                        {lang === 'ar' ? 'نعم، ابدأ' : 'Yes, Start'}
+                                      </Button>
+                                      <Button variant="outline" className="flex-1 h-11 rounded-xl text-muted-foreground">
+                                        {lang === 'ar' ? 'لا، انتظر' : 'No, Wait'}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {canStart && !belowMinimum && (
+                                  <Button
+                                    className="w-full h-12 text-base rounded-xl"
+                                    size="lg"
+                                    onClick={() => startTrip(slot)}
+                                    disabled={startingTrip}
+                                  >
+                                    {startingTrip ? <Loader2 className="w-5 h-5 animate-spin me-2" /> : <Play className="w-5 h-5 me-2" />}
+                                    {lang === 'ar' ? 'ابدأ الرحلة الآن' : 'Start This Trip'}
+                                  </Button>
                                 )}
 
                                 {isToday && shuttle.status !== 'active' && slotBookings.length > 0 && (
