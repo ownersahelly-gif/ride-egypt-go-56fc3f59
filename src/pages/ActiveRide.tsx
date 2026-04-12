@@ -74,6 +74,7 @@ const ActiveRide = () => {
   const [boardingInput, setBoardingInput] = useState('');
   const [verifyingBooking, setVerifyingBooking] = useState<string | null>(null);
   const [chatBookingId, setChatBookingId] = useState<string | null>(null);
+  const [unreadBookings, setUnreadBookings] = useState<Set<string>>(new Set());
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [arrivedAt, setArrivedAt] = useState<number | null>(null);
