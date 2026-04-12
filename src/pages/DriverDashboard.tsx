@@ -1363,6 +1363,16 @@ const DriverDashboard = () => {
                           const canStartTrip = isTripToday && shuttle?.status === 'active' && activeBookings.length > 0 && withinWindow && !tripExpired;
                           return (
                           <div className="border-t border-border p-4 space-y-3">
+                            {tripExpired && isTripToday && (
+                              <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3 flex items-start gap-2">
+                                <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                                <div>
+                                  <p className="text-sm font-medium text-destructive">
+                                    {lang === 'ar' ? 'فات الموعد بأكثر من 30 دقيقة — لا يمكن بدء الرحلة' : 'Departure passed by 30+ minutes — trip cannot be started'}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
                             {canStartTrip && (
                               <Link to="/active-ride">
                                 <Button className="w-full h-12 text-base rounded-xl mb-2" size="lg">
