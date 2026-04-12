@@ -793,8 +793,38 @@ const DriverDashboard = () => {
                                   </div>
                                 )}
 
+                                {/* Expired trip warning */}
+                                {isExpired && slotBookings.length > 0 && (
+                                  <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 space-y-2">
+                                    <div className="flex items-start gap-2">
+                                      <AlertCircle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
+                                      <div>
+                                        <p className="text-sm font-medium text-destructive">
+                                          {lang === 'ar'
+                                            ? 'فات الموعد بأكثر من 30 دقيقة — تم إلغاء الرحلة تلقائياً'
+                                            : 'Departure exceeded by 30+ minutes — trip auto-cancelled'}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                          {lang === 'ar'
+                                            ? `${slotBookings.length} راكب تم إبلاغهم بالإلغاء`
+                                            : `${slotBookings.length} passenger(s) have been notified`}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {isExpired && slotBookings.length === 0 && (
+                                  <div className="bg-muted/50 rounded-xl p-3 flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-muted-foreground" />
+                                    <p className="text-sm text-muted-foreground">
+                                      {lang === 'ar' ? 'فات موعد الرحلة ولم يكن هناك ركاب' : 'Trip time passed with no passengers'}
+                                    </p>
+                                  </div>
+                                )}
+
                                 {/* Status message */}
-                                {!isToday && (
+                                {!isToday && !isExpired && (
                                   <div className="bg-muted/50 rounded-xl p-3 flex items-center gap-2">
                                     <Clock className="w-4 h-4 text-muted-foreground" />
                                     <p className="text-sm text-muted-foreground">
@@ -805,7 +835,7 @@ const DriverDashboard = () => {
                                   </div>
                                 )}
 
-                                {isToday && !canStart && slotBookings.length === 0 && (
+                                {isToday && !canStart && !isExpired && slotBookings.length === 0 && (
                                   <div className="bg-muted/50 rounded-xl p-3 flex items-center gap-2">
                                     <Users className="w-4 h-4 text-muted-foreground" />
                                     <p className="text-sm text-muted-foreground">
