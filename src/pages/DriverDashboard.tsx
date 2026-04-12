@@ -1640,6 +1640,35 @@ const DriverDashboard = () => {
           </>
         )}
       </div>
+
+      {/* Delete confirmation dialog */}
+      {deleteConfirmKey && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setDeleteConfirmKey(null)}>
+          <div className="bg-card rounded-2xl p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-destructive shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-foreground">
+                  {lang === 'ar' ? 'تحذير: ركاب دفعوا لهذه الرحلة' : 'Warning: Passengers have paid for this trip'}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {lang === 'ar'
+                    ? 'هناك ركاب حجزوا ودفعوا لهذه الرحلة. حذفها سيؤدي لإلغاء حجوزاتهم. هل أنت متأكد؟'
+                    : 'There are passengers who booked and paid for this trip. Deleting it will cancel their bookings. Are you sure?'}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="destructive" className="flex-1" onClick={confirmDeleteTrip}>
+                {lang === 'ar' ? 'نعم، احذف' : 'Yes, Delete'}
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirmKey(null)}>
+                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
