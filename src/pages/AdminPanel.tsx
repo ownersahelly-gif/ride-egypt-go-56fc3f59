@@ -195,7 +195,7 @@ const AdminPanel = () => {
     setSavingAppName(false);
   };
 
-
+  const createRoute = async () => {
     const routeData = {
       ...routeForm,
       description_en: `${routeForm.origin_name_en} to ${routeForm.destination_name_en}`,
