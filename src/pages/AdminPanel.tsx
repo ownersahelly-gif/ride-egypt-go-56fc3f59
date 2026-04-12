@@ -15,6 +15,7 @@ import {
   CheckCircle2, XCircle, MapPin, Clock, Search, Globe, LogOut, Shield,
   Loader2, Eye, Database, Settings, Phone, Package, ListOrdered
 } from 'lucide-react';
+import PackagePricing from '@/components/admin/PackagePricing';
 
 type AdminTab = 'routes' | 'drivers' | 'shuttles' | 'bookings' | 'analytics' | 'approvals' | 'settings' | 'carpool' | 'users' | 'route_requests';
 
