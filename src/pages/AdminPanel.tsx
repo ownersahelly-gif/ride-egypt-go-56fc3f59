@@ -68,6 +68,11 @@ const AdminPanel = () => {
   const [contentSettings, setContentSettings] = useState<Record<string, string>>({});
   const [savingContent, setSavingContent] = useState(false);
 
+  // User filters
+  const [userTypeFilter, setUserTypeFilter] = useState('all');
+  const [userTimeFilter, setUserTimeFilter] = useState('all');
+  const [userSearch, setUserSearch] = useState('');
+
   // Route form
   const [showRouteForm, setShowRouteForm] = useState(false);
   const [editingRouteId, setEditingRouteId] = useState<string | null>(null);
@@ -1556,13 +1561,63 @@ const AdminPanel = () => {
           </div>
         )}
         {/* Users Tab */}
-        {tab === 'users' && (
+        {tab === 'users' && (() => {
+          const now = new Date();
+          const filteredUsers = allProfiles.filter((p: any) => {
+            if (userTypeFilter !== 'all' && p.user_type !== userTypeFilter) return false;
+            if (userTimeFilter !== 'all') {
+              const joined = new Date(p.created_at);
+              const hoursAgo = (now.getTime() - joined.getTime()) / (1000 * 60 * 60);
+              if (hoursAgo > parseInt(userTimeFilter)) return false;
+            }
+            if (userSearch) {
+              const q = userSearch.toLowerCase();
+              if (!(p.full_name || '').toLowerCase().includes(q) && !(p.phone || '').toLowerCase().includes(q)) return false;
+            }
+            return true;
+          });
+
+          return (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-foreground">{lang === 'ar' ? 'المستخدمين المسجلين' : 'Registered Users'}</h2>
-            <p className="text-sm text-muted-foreground">{lang === 'ar' ? `${allProfiles.length} مستخدم مسجل` : `${allProfiles.length} registered users`}</p>
-            {allProfiles.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{lang === 'ar' ? `${filteredUsers.length} من ${allProfiles.length} مستخدم` : `${filteredUsers.length} of ${allProfiles.length} users`}</p>
+
+            <div className="flex flex-wrap gap-3">
+              <div className="relative flex-1 min-w-[180px]">
+                <Search className="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={lang === 'ar' ? 'بحث بالاسم أو الهاتف...' : 'Search name or phone...'}
+                  className="ps-9"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                />
+              </div>
+              <select
+                className="border border-border rounded-lg px-3 py-2 text-sm bg-card text-foreground"
+                value={userTypeFilter}
+                onChange={(e) => setUserTypeFilter(e.target.value)}
+              >
+                <option value="all">{lang === 'ar' ? 'الكل' : 'All Types'}</option>
+                <option value="customer">{lang === 'ar' ? 'راكب' : 'Customer'}</option>
+                <option value="driver">{lang === 'ar' ? 'سائق' : 'Driver'}</option>
+                <option value="admin">{lang === 'ar' ? 'أدمن' : 'Admin'}</option>
+              </select>
+              <select
+                className="border border-border rounded-lg px-3 py-2 text-sm bg-card text-foreground"
+                value={userTimeFilter}
+                onChange={(e) => setUserTimeFilter(e.target.value)}
+              >
+                <option value="all">{lang === 'ar' ? 'كل الأوقات' : 'All Time'}</option>
+                <option value="24">{lang === 'ar' ? 'آخر 24 ساعة' : 'Last 24 hours'}</option>
+                <option value="48">{lang === 'ar' ? 'آخر 48 ساعة' : 'Last 48 hours'}</option>
+                <option value="168">{lang === 'ar' ? 'آخر أسبوع' : 'Last 7 days'}</option>
+                <option value="720">{lang === 'ar' ? 'آخر 30 يوم' : 'Last 30 days'}</option>
+              </select>
+            </div>
+
+            {filteredUsers.length === 0 ? (
               <div className="bg-card border border-border rounded-xl p-8 text-center text-muted-foreground">
-                {lang === 'ar' ? 'لا يوجد مستخدمين بعد' : 'No users yet'}
+                {lang === 'ar' ? 'لا يوجد مستخدمين مطابقين' : 'No matching users'}
               </div>
             ) : (
               <div className="bg-card border border-border rounded-xl overflow-hidden">
@@ -1578,7 +1633,7 @@ const AdminPanel = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {allProfiles.map((p: any) => (
+                      {filteredUsers.map((p: any) => (
                         <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/20">
                           <td className="p-3 font-medium text-foreground">{p.full_name || '—'}</td>
                           <td className="p-3 text-muted-foreground">{p.phone || '—'}</td>
@@ -1599,18 +1654,15 @@ const AdminPanel = () => {
                                   ? `هل أنت متأكد من حذف المستخدم "${p.full_name || p.user_id}"؟ سيتم حذف جميع بياناته نهائياً.`
                                   : `Are you sure you want to permanently delete user "${p.full_name || p.user_id}"? All their data, bookings, and files will be removed.`;
                                 if (!window.confirm(confirmMsg)) return;
-
                                 const secondConfirm = lang === 'ar'
                                   ? 'تأكيد نهائي: هذا الإجراء لا يمكن التراجع عنه. متابعة؟'
                                   : 'Final confirmation: This action cannot be undone. Continue?';
                                 if (!window.confirm(secondConfirm)) return;
-
                                 try {
                                   toast.loading(lang === 'ar' ? 'جاري حذف المستخدم...' : 'Deleting user...', { id: 'delete-user' });
                                   const { data: { session } } = await supabase.auth.getSession();
                                   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
                                   const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
                                   const res = await fetch(`${supabaseUrl}/functions/v1/delete-user`, {
                                     method: 'POST',
                                     headers: {
@@ -1620,10 +1672,8 @@ const AdminPanel = () => {
                                     },
                                     body: JSON.stringify({ user_id: p.user_id }),
                                   });
-
                                   const result = await res.json();
                                   if (!res.ok) throw new Error(result.error || 'Failed to delete user');
-
                                   toast.success(
                                     lang === 'ar' ? 'تم حذف المستخدم بنجاح' : 'User deleted successfully',
                                     { id: 'delete-user', description: lang === 'ar' ? `تم حذف ${result.bunny_files_deleted} ملف` : `${result.bunny_files_deleted} files removed` }
@@ -1648,7 +1698,8 @@ const AdminPanel = () => {
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
 
         {/* Route Requests Tab */}
         {tab === 'route_requests' && (
