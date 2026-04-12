@@ -242,7 +242,7 @@ const MyBookings = () => {
                   </div>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
                     <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{booking.scheduled_date}</span>
-                    <span>{booking.scheduled_time}</span>
+                    <span>{formatTime12h(booking.scheduled_time, lang)}</span>
                     <span>{booking.seats} {t('booking.seat')}</span>
                   </div>
 
