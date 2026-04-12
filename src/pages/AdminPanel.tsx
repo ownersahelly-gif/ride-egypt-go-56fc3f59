@@ -1241,6 +1241,11 @@ const AdminPanel = () => {
           </div>
         )}
 
+        {/* Packages Tab */}
+        {tab === 'packages' && (
+          <PackagePricing lang={lang} routes={routes} />
+        )}
+
         {/* Settings Tab */}
         {tab === 'settings' && (
           <div className="space-y-6">
