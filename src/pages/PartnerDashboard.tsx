@@ -229,7 +229,6 @@ const PartnerDashboard = () => {
         </div>
       </div>
     );
-    );
   }
 
   // Pending approval
@@ -261,16 +260,11 @@ const PartnerDashboard = () => {
 
   // Active partner dashboard
   return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <div className="bg-primary text-primary-foreground px-4 pt-12 pb-8">
-        <div className="flex items-center gap-3 mb-6">
-          <Link to="/dashboard" className="p-2 rounded-full bg-primary-foreground/10"><Back className="w-5 h-5" /></Link>
-          <h1 className="text-xl font-bold">{lang === 'ar' ? 'لوحة الشريك' : 'Partner Dashboard'}</h1>
-        </div>
-        <p className="text-sm opacity-80">{partner.name}</p>
-        <p className="text-xs opacity-60">{lang === 'ar' ? `النسبة: ${partner.commission_percentage}%` : `Commission: ${partner.commission_percentage}%`}</p>
-      </div>
+    <div className="min-h-screen bg-background overflow-y-auto">
+      <PartnerHeader
+        title={lang === 'ar' ? 'لوحة الشريك' : 'Partner Dashboard'}
+        subtitle={`${partner.name} — ${lang === 'ar' ? `النسبة: ${partner.commission_percentage}%` : `Commission: ${partner.commission_percentage}%`}`}
+      />
 
       <div className="px-4 py-6 space-y-6">
         {/* Referral Link */}
