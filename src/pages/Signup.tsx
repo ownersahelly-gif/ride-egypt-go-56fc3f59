@@ -216,7 +216,13 @@ const Signup = () => {
           carLicense ? uploadFile(userId, carLicense.file, 'car_license') : null,
           carPhoto ? uploadFile(userId, carPhoto.file, 'car_photo') : null,
           wasUber && uberProof ? uploadFile(userId, uberProof.file, 'uber_proof') : null,
+          profilePhoto ? uploadFile(userId, profilePhoto.file, 'profile_photo') : null,
         ]);
+
+        // Save profile photo as avatar
+        if (uploads[7]) {
+          await supabase.from('profiles').update({ avatar_url: uploads[7] }).eq('user_id', userId);
+        }
 
         await supabase.from('driver_applications').insert({
           user_id: userId,
