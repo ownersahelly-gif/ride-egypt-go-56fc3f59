@@ -67,6 +67,7 @@ const DriverDashboard = () => {
   const [quickAddTime, setQuickAddTime] = useState('12:00');
   const [quickAddDir, setQuickAddDir] = useState<'go' | 'return'>('go');
   const [savingQuickAdd, setSavingQuickAdd] = useState(false);
+  const [startingTrip, setStartingTrip] = useState(false);
 
   const { newBookingsCount, acknowledge: ackBookings } = useDriverBookingNotifications(shuttle?.id || null);
   
@@ -378,6 +379,31 @@ const DriverDashboard = () => {
     else setRouteRequestForm(p => ({ ...p, destination_lat: lat, destination_lng: lng, destination_name: p.destination_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}` }));
   };
 
+  const startTrip = async (slot: any) => {
+    if (!user || !shuttle) return;
+    setStartingTrip(true);
+    try {
+      // Send push notification to all booked riders
+      await supabase.functions.invoke('push-notification', {
+        body: {
+          notification_type: 'trip_started',
+          record: {
+            shuttle_id: shuttle.id,
+            route_id: slot.routeId,
+            driver_id: user.id,
+            scheduled_date: slot.dateStr,
+            scheduled_time: slot.time,
+            direction: slot.direction === 'back' ? 'return' : 'go',
+          },
+        },
+      });
+    } catch (e) {
+      console.error('Failed to send trip started notification:', e);
+    }
+    setStartingTrip(false);
+    navigate('/active-ride');
+  };
+
   const statusColors: Record<string, string> = {
     active: 'bg-green-100 text-green-700', inactive: 'bg-muted text-muted-foreground',
     maintenance: 'bg-secondary/20 text-secondary', pending: 'bg-secondary/20 text-secondary',
@@ -673,14 +699,19 @@ const DriverDashboard = () => {
                         const isAdHoc = slot.scheduleId.startsWith('adhoc_');
                         const isTestTrip = !!firstTodayTrip && firstTodayTrip.scheduleId === slot.scheduleId && firstTodayTrip.direction === slot.direction;
 
-                        // Time gate: can only start within 2 hours before departure
+                        // Time gate: can only start within 2 hours before departure (and up to 4h after for past trips)
                         const [slotH, slotM] = slot.time.split(':').map(Number);
                         const slotDate = new Date(slot.dateStr + 'T00:00:00');
                         slotDate.setHours(slotH, slotM, 0);
                         const msUntilDeparture = slotDate.getTime() - Date.now();
-                        const withinTwoHours = msUntilDeparture <= 2 * 60 * 60 * 1000 && msUntilDeparture >= -4 * 60 * 60 * 1000; // allow up to 4h after too
+                        const withinTwoHours = msUntilDeparture <= 2 * 60 * 60 * 1000 && msUntilDeparture >= -4 * 60 * 60 * 1000;
 
+                        // Find schedule's min_passengers
+                        const scheduleEntry = driverSchedules.find(s => s.id === slot.scheduleId);
+                        const minPassengers = scheduleEntry?.min_passengers || 5;
+                        const hasEnoughPassengers = slotBookings.length >= minPassengers;
                         const canStart = shuttle.status === 'active' && isToday && withinTwoHours && (slotBookings.length > 0 || isTestTrip || isAdHoc);
+                        const belowMinimum = canStart && slotBookings.length > 0 && !hasEnoughPassengers && !isTestTrip;
 
                         const routeOrigin = { lat: slot.routeInfo?.origin_lat || 0, lng: slot.routeInfo?.origin_lng || 0 };
                         const routeDestination = { lat: slot.routeInfo?.destination_lat || 0, lng: slot.routeInfo?.destination_lng || 0 };
@@ -694,7 +725,7 @@ const DriverDashboard = () => {
                         return (
                           <div key={key} className={`bg-card border rounded-2xl overflow-hidden transition-all ${
                             slot.direction === 'go' ? 'border-green-200' : 'border-blue-200'
-                          } ${slot.isPast ? 'opacity-50' : ''}`}>
+                          } ${slot.isPast && !canStart ? 'opacity-50' : ''}`}>
                             <div className="flex items-stretch">
                               <button
                                 onClick={() => setExpandedUpcoming(isExpanded ? null : key)}
@@ -776,13 +807,47 @@ const DriverDashboard = () => {
                                   </div>
                                 )}
 
-                                {canStart && (
-                                  <Link to="/active-ride">
-                                    <Button className="w-full h-12 text-base rounded-xl" size="lg">
-                                      <Play className="w-5 h-5 me-2" />
-                                      {lang === 'ar' ? 'ابدأ الرحلة الآن' : 'Start This Trip'}
-                                    </Button>
-                                  </Link>
+                                {canStart && belowMinimum && (
+                                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                                    <div className="flex items-start gap-2">
+                                      <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                                      <div>
+                                        <p className="text-sm font-medium text-amber-800">
+                                          {lang === 'ar'
+                                            ? `الحد الأدنى ${minPassengers} ركاب — الحالي ${slotBookings.length} فقط`
+                                            : `Minimum ${minPassengers} passengers — only ${slotBookings.length} booked`}
+                                        </p>
+                                        <p className="text-xs text-amber-600 mt-1">
+                                          {lang === 'ar' ? 'هل تريد بدء الرحلة على أي حال؟' : 'Do you want to start the trip anyway?'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        className="flex-1 h-11 rounded-xl"
+                                        onClick={() => startTrip(slot)}
+                                        disabled={startingTrip}
+                                      >
+                                        {startingTrip ? <Loader2 className="w-4 h-4 animate-spin me-2" /> : <Play className="w-4 h-4 me-2" />}
+                                        {lang === 'ar' ? 'نعم، ابدأ' : 'Yes, Start'}
+                                      </Button>
+                                      <Button variant="outline" className="flex-1 h-11 rounded-xl text-muted-foreground">
+                                        {lang === 'ar' ? 'لا، انتظر' : 'No, Wait'}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {canStart && !belowMinimum && (
+                                  <Button
+                                    className="w-full h-12 text-base rounded-xl"
+                                    size="lg"
+                                    onClick={() => startTrip(slot)}
+                                    disabled={startingTrip}
+                                  >
+                                    {startingTrip ? <Loader2 className="w-5 h-5 animate-spin me-2" /> : <Play className="w-5 h-5 me-2" />}
+                                    {lang === 'ar' ? 'ابدأ الرحلة الآن' : 'Start This Trip'}
+                                  </Button>
                                 )}
 
                                 {isToday && shuttle.status !== 'active' && slotBookings.length > 0 && (
