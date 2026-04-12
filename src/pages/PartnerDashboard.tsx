@@ -604,8 +604,11 @@ const PartnerDashboard = () => {
 
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => { setShowRouteForm(false); resetRouteForm(); }} className="flex-1">{lang === 'ar' ? 'إلغاء' : 'Cancel'}</Button>
-                  <Button onClick={handleSubmitRoute} disabled={submittingRoute} className="flex-1">
-                    {submittingRoute ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingRouteId ? (lang === 'ar' ? 'تحديث وإعادة إرسال' : 'Update & Resubmit') : (lang === 'ar' ? 'إرسال الطلب' : 'Submit Request'))}
+                  <Button variant="secondary" onClick={() => handleSubmitRoute(true)} disabled={submittingRoute} className="flex-1">
+                    {lang === 'ar' ? 'حفظ مسودة' : 'Save Draft'}
+                  </Button>
+                  <Button onClick={() => handleSubmitRoute(false)} disabled={submittingRoute} className="flex-1">
+                    {submittingRoute ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingRouteId ? (lang === 'ar' ? 'إعادة إرسال' : 'Resubmit') : (lang === 'ar' ? 'إرسال' : 'Submit'))}
                   </Button>
                 </div>
               </div>
