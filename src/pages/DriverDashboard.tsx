@@ -809,15 +809,15 @@ const DriverDashboard = () => {
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
-                              {/* Go to trips page button */}
-                              <button
-                                onClick={() => setTab('trips')}
-                                className="px-2 flex items-center justify-center border-s border-border hover:bg-primary/10 transition-colors text-primary"
-                                title={lang === 'ar' ? 'افتح الرحلات' : 'Go to Trips'}
-                              >
-                                <ArrowRight className="w-4 h-4" />
-                              </button>
                             </div>
+                            {/* Go to trips button below card */}
+                            <button
+                              onClick={() => setTab('trips')}
+                              className="w-full flex items-center justify-center gap-2 py-2.5 border-t border-border text-xs font-medium text-primary hover:bg-primary/5 transition-colors"
+                            >
+                              {lang === 'ar' ? 'افتح صفحة الرحلات' : 'Go to Trips Page'}
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
                             {isExpanded && (
                               <div className="border-t border-border p-4 space-y-3">
                                 {isTestTrip && (
