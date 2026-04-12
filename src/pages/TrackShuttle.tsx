@@ -568,6 +568,14 @@ const TrackShuttle = () => {
             </span>
           )}
           <div className="ms-auto flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={() => {
+              const url = `${window.location.origin}/track?booking=${bookingId}`;
+              const text = lang === 'ar' ? `تتبع رحلتي على مسار: ${url}` : `Track my ride on Massar: ${url}`;
+              if (navigator.share) { navigator.share({ title: 'Massar', text, url }); }
+              else { navigator.clipboard.writeText(url); toast({ title: lang === 'ar' ? 'تم نسخ الرابط' : 'Link copied!' }); }
+            }}>
+              <Share2 className="w-4 h-4" />
+            </Button>
             <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setSosActive(true)}>
               <Shield className="w-4 h-4" />
             </Button>
