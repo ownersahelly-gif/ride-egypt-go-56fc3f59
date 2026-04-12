@@ -564,13 +564,13 @@ const DriverDashboard = () => {
                     const adHocMap = new Map<string, { time: string; direction: 'go' | 'back'; routeId: string }>();
                     todayBookings.forEach(b => {
                       const dir = b.trip_direction === 'return' ? 'back' : 'go';
-                      const timeKey = `${formatTime12h(b.scheduled_time, lang)}_${dir}`;
+                      const timeKey = `${b.scheduled_time?.slice(0, 5)}_${dir}`;
                       if (!adHocMap.has(timeKey)) {
                         adHocMap.set(timeKey, { time: b.scheduled_time?.slice(0, 5), direction: dir, routeId: b.route_id });
                       }
                       // Also add return slot for 'both' trips
                       if (b.trip_direction === 'both') {
-                        const returnKey = `${formatTime12h(b.scheduled_time, lang)}_back`;
+                        const returnKey = `${b.scheduled_time?.slice(0, 5)}_back`;
                         if (!adHocMap.has(returnKey)) {
                           adHocMap.set(returnKey, { time: b.scheduled_time?.slice(0, 5), direction: 'back', routeId: b.route_id });
                         }
