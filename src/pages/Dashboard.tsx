@@ -901,19 +901,35 @@ const Dashboard = () => {
               <Back className="w-4 h-4" />
               <span className="text-sm">{lang === 'ar' ? 'رجوع' : 'Back'}</span>
             </Button>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
-                {driverProfile?.avatar_url ? (<img src={driverProfile.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" />) : (<UserIcon className="w-6 h-6 text-primary" />)}
+            {selectedRide._type === 'published' ? (
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
+                  <Car className="w-6 h-6 text-secondary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-foreground">{lang === 'ar' ? (selectedRide.routes?.name_ar || 'رحلة مخططة') : (selectedRide.routes?.name_en || 'Planned Trip')}</h3>
+                  <p className="text-xs text-muted-foreground">{lang === 'ar' ? 'احجز مقعدك — سيتم تأكيد الرحلة لاحقاً' : 'Book your seat — trip will be confirmed later'}</p>
+                </div>
+                <div className="text-end">
+                  <p className="text-xl font-bold text-primary">{dynamicPrice} EGP</p>
+                  <p className="text-[10px] text-muted-foreground">{selectedRide.departure_time?.slice(0, 5)}</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-foreground">{driverProfile?.full_name || (lang === 'ar' ? 'سائق' : 'Driver')}</h3>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground"><Car className="w-3 h-3" /><span>{shuttleInfo?.vehicle_model} · {shuttleInfo?.vehicle_plate}</span></div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
+                  {driverProfile?.avatar_url ? (<img src={driverProfile.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" />) : (<UserIcon className="w-6 h-6 text-primary" />)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-foreground">{driverProfile?.full_name || (lang === 'ar' ? 'سائق' : 'Driver')}</h3>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground"><Car className="w-3 h-3" /><span>{shuttleInfo?.vehicle_model} · {shuttleInfo?.vehicle_plate}</span></div>
+                </div>
+                <div className="text-end">
+                  <p className="text-xl font-bold text-primary">{dynamicPrice} EGP</p>
+                  <p className="text-[10px] text-muted-foreground">{selectedRide.departure_time?.slice(0, 5)}</p>
+                </div>
               </div>
-              <div className="text-end">
-                <p className="text-xl font-bold text-primary">{dynamicPrice} EGP</p>
-                <p className="text-[10px] text-muted-foreground">{selectedRide.departure_time?.slice(0, 5)}</p>
-              </div>
-            </div>
+            )}
 
             {savedLocations.length > 0 && (
               <div className="space-y-1">
