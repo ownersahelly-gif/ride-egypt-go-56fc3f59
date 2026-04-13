@@ -375,19 +375,20 @@ const BookRide = () => {
       toast({ title: lang === 'ar' ? 'اختر نقاط الركوب والنزول' : 'Select pickup & dropoff', variant: 'destructive' });
       return;
     }
+    const isPublished = selectedRide._type === 'published';
     const usingBundle = useBundle && activeBundlePurchase;
-    if (!asWaitlist && !usingBundle && !paymentProof) {
+    if (!isPublished && !asWaitlist && !usingBundle && !paymentProof) {
       toast({ title: lang === 'ar' ? 'أرفق إثبات الدفع' : 'Attach payment proof', variant: 'destructive' });
       return;
     }
-    if (!asWaitlist && selectedRide.available_seats < 1) {
+    if (!isPublished && !asWaitlist && selectedRide.available_seats < 1) {
       toast({ title: lang === 'ar' ? 'لا توجد مقاعد' : 'No seats available', variant: 'destructive' });
       return;
     }
     setLoading(true);
     try {
       let proofUrl: string | null = null;
-      if (paymentProof && !usingBundle) {
+      if (paymentProof && !usingBundle && !isPublished) {
         setUploadingProof(true);
         const ext = paymentProof.name.split('.').pop();
         const filePath = `instapay-proofs/${user.id}/${Date.now()}.${ext}`;
@@ -400,7 +401,7 @@ const BookRide = () => {
       if (asWaitlist) {
         const { data: existingWaitlist } = await supabase
           .from('bookings').select('waitlist_position')
-          .eq('route_id', selectedRide.route_id).eq('scheduled_date', selectedRide.ride_date)
+          .eq('route_id', selectedRide.route_id).eq('scheduled_date', selectedRide.ride_date || selectedRide.trip_date)
           .eq('scheduled_time', selectedRide.departure_time).eq('status', 'waitlist')
           .order('waitlist_position', { ascending: false }).limit(1);
         waitlistPos = ((existingWaitlist?.[0]?.waitlist_position as number) || 0) + 1;
@@ -418,9 +419,9 @@ const BookRide = () => {
         ? (lang === 'ar' ? selectedDropoffStop.name_ar : selectedDropoffStop.name_en)
         : (lang === 'ar' ? route.destination_name_ar : route.destination_name_en);
 
-      const basePrice = dynamicPrice;
+      const basePrice = isPublished ? 0 : dynamicPrice;
       const singlePrice = usingBundle ? 0 : basePrice;
-      const bookingStatus = asWaitlist ? 'waitlist' : (usingBundle ? 'confirmed' : 'pending');
+      const bookingStatus = isPublished ? 'quote_pending' : (asWaitlist ? 'waitlist' : (usingBundle ? 'confirmed' : 'pending'));
 
       // Force direction to match the ride instance when it's a single-direction ride
       const effectiveDirection = selectedRide.direction === 'go' ? 'go'
