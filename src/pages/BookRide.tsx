@@ -221,6 +221,7 @@ const BookRide = () => {
     setPickupMode('start');
     setDropoffMode('end');
     setUseBundle(false);
+    setExistingBooking(null);
     // Default trip direction based on ride direction
     setTripDirection(ride.direction === 'go' ? 'go' : ride.direction === 'return' ? 'return' : 'both');
     setStep('details');
@@ -233,13 +234,15 @@ const BookRide = () => {
     setRouteStops(stops || []);
 
     if (user && ride.route_id) {
-      const [{ data: savedLocs }, { data: pkgTemplates }, { data: rOverrides }, { data: tRules }, { data: gFactor }, { data: purchases }] = await Promise.all([
+      const rideDate = ride.ride_date || ride.trip_date;
+      const [{ data: savedLocs }, { data: pkgTemplates }, { data: rOverrides }, { data: tRules }, { data: gFactor }, { data: purchases }, { data: existingBookings }] = await Promise.all([
         supabase.from('saved_locations').select('*').eq('user_id', user.id).eq('route_id', ride.route_id).order('use_count', { ascending: false }).limit(5),
         supabase.from('package_templates').select('*').eq('is_active', true).order('sort_order'),
         supabase.from('route_package_overrides').select('*').eq('route_id', ride.route_id),
         supabase.from('time_based_pricing_rules').select('*').eq('is_active', true),
         supabase.from('app_settings').select('value').eq('key', 'global_default_factor').single(),
         supabase.from('bundle_purchases').select('*').eq('user_id', user.id).eq('route_id', ride.route_id).eq('status', 'active').gt('rides_remaining', 0).gt('expires_at', new Date().toISOString()).limit(1),
+        supabase.from('bookings').select('id, status').eq('user_id', user.id).eq('route_id', ride.route_id).eq('scheduled_date', rideDate).eq('scheduled_time', ride.departure_time).not('status', 'eq', 'cancelled').limit(1),
       ]);
       setSavedLocations(savedLocs || []);
       setPackageTemplates(pkgTemplates || []);
@@ -247,6 +250,7 @@ const BookRide = () => {
       setTimeRules(tRules || []);
       if (gFactor) setGlobalDefaultFactor(parseFloat(gFactor.value) || 1.0);
       setActiveBundlePurchase(purchases?.[0] || null);
+      setExistingBooking(existingBookings?.[0] || null);
     }
   };
 
