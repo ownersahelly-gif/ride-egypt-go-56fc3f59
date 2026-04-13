@@ -56,6 +56,7 @@ export interface FilterState {
   timeFrom: string;
   timeTo: string;
   days: number[];
+  commonDaysOnly?: boolean;
 }
 
 export const AREA_PRESETS: AreaPreset[] = [

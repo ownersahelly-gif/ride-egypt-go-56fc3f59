@@ -29,7 +29,7 @@ const GlobalMap = () => {
   const [loading, setLoading] = useState(true);
 
   // UI state
-  const [filters, setFilters] = useState<FilterState>({ timeFrom: '', timeTo: '', days: [] });
+  const [filters, setFilters] = useState<FilterState>({ timeFrom: '', timeTo: '', days: [], commonDaysOnly: false });
   const [showFilters, setShowFilters] = useState(false);
   const [hiddenUserIds, setHiddenUserIds] = useState<Set<string>>(new Set());
   const [selectedUser, setSelectedUser] = useState<RouteRequestUser | null>(null);
@@ -129,7 +129,12 @@ const GlobalMap = () => {
     // Day filter
     if (filters.days.length > 0) {
       if (u.preferredDays.length === 0) return false;
-      if (!filters.days.some(d => u.preferredDays.includes(d))) return false;
+      if (filters.commonDaysOnly) {
+        // User must have ALL selected days
+        if (!filters.days.every(d => u.preferredDays.includes(d))) return false;
+      } else {
+        if (!filters.days.some(d => u.preferredDays.includes(d))) return false;
+      }
     }
 
     return true;
@@ -487,6 +492,33 @@ const GlobalMap = () => {
     }
   };
 
+  // Open route in Google Maps
+  const handleOpenInGoogleMaps = useCallback(() => {
+    if (connectedDirections.length === 0) return;
+    
+    // Collect all stop coordinates from the connected directions
+    const allPoints: { lat: number; lng: number }[] = [];
+    connectedDirections.forEach(dir => {
+      dir.routes[0]?.legs?.forEach((leg, i) => {
+        if (i === 0) allPoints.push({ lat: leg.start_location.lat(), lng: leg.start_location.lng() });
+        allPoints.push({ lat: leg.end_location.lat(), lng: leg.end_location.lng() });
+      });
+    });
+
+    if (allPoints.length < 2) return;
+
+    const origin = allPoints[0];
+    const destination = allPoints[allPoints.length - 1];
+    const waypoints = allPoints.slice(1, -1);
+
+    let url = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving`;
+    if (waypoints.length > 0) {
+      const wp = waypoints.map(p => `${p.lat},${p.lng}`).join('|');
+      url += `&waypoints=${encodeURIComponent(wp)}`;
+    }
+    window.open(url, '_blank');
+  }, [connectedDirections]);
+
   const handleAssignUser = (userId: string, stopId: string) => {
     setRouteStops(prev => prev.map(s => {
       if (s.id === stopId) {
@@ -581,6 +613,9 @@ const GlobalMap = () => {
         canSaveConnectedRoute={showConnectedRoutes && connectedDirections.length > 0}
         onSaveConnectedRoute={handleSaveConnectedRoute}
         savingConnectedRoute={savingConnectedRoute}
+        onOpenInGoogleMaps={handleOpenInGoogleMaps}
+        onFilterCommonDays={() => setFilters(f => ({ ...f, commonDaysOnly: !f.commonDaysOnly }))}
+        commonDaysActive={!!filters.commonDaysOnly}
       />
 
       <UserSidebar
