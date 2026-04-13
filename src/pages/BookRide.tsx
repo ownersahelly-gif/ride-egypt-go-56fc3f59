@@ -933,28 +933,44 @@ const BookRide = () => {
               <Back className="w-4 h-4" />{t('booking.backToRoutes')}
             </button>
 
-            {/* Driver & Vehicle */}
+            {/* Driver & Vehicle or Planned Trip */}
             <div className="bg-card border border-border rounded-2xl p-5">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                  {driverProfile?.avatar_url ? (
-                    <img src={driverProfile.avatar_url} alt="" className="w-14 h-14 rounded-full object-cover" />
-                  ) : (
-                    <UserIcon className="w-7 h-7 text-primary" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-bold text-foreground text-lg">
-                    {driverProfile?.full_name || (lang === 'ar' ? 'سائق' : 'Driver')}
-                  </h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                    <Car className="w-4 h-4" />
-                    <span>{shuttleInfo?.vehicle_model}</span>
-                    <span className="text-muted-foreground">·</span>
-                    <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{shuttleInfo?.vehicle_plate}</span>
+              {selectedRide._type === 'published' ? (
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-14 h-14 rounded-full bg-secondary/10 flex items-center justify-center">
+                    <Car className="w-7 h-7 text-secondary" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground text-lg">
+                      {lang === 'ar' ? 'رحلة مخططة' : 'Planned Trip'}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {lang === 'ar' ? 'احجز مقعدك — سنتواصل معك بالسعر' : 'Book your seat — we\'ll contact you with the price'}
+                    </p>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                    {driverProfile?.avatar_url ? (
+                      <img src={driverProfile.avatar_url} alt="" className="w-14 h-14 rounded-full object-cover" />
+                    ) : (
+                      <UserIcon className="w-7 h-7 text-primary" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground text-lg">
+                      {driverProfile?.full_name || (lang === 'ar' ? 'سائق' : 'Driver')}
+                    </h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                      <Car className="w-4 h-4" />
+                      <span>{shuttleInfo?.vehicle_model}</span>
+                      <span className="text-muted-foreground">·</span>
+                      <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{shuttleInfo?.vehicle_plate}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-surface rounded-xl p-3 text-center">
                   <p className="text-xl font-bold text-primary">{dynamicPrice} EGP</p>
