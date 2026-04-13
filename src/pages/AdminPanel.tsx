@@ -505,6 +505,55 @@ const AdminPanel = () => {
     setRouteStopsMap(prev => ({ ...prev, [routeId]: data || [] }));
   };
 
+  // Find paired (return/original) route by naming convention
+  const findPairedRouteId = (routeId: string): string | null => {
+    const route = routes.find(r => r.id === routeId);
+    if (!route) return null;
+    
+    const returnSuffix = ' (Return)';
+    const returnSuffixAr = ' (عودة)';
+    
+    if (route.name_en.endsWith(returnSuffix)) {
+      // This is a return route — find the original
+      const originalName = route.name_en.slice(0, -returnSuffix.length);
+      const original = routes.find(r => r.name_en === originalName && r.id !== routeId);
+      return original?.id || null;
+    } else {
+      // This is an original route — find the return
+      const returnRoute = routes.find(r => r.name_en === `${route.name_en}${returnSuffix}` && r.id !== routeId);
+      return returnRoute?.id || null;
+    }
+  };
+
+  // Sync a stop to the paired route (add it in reversed order)
+  const syncStopToPairedRoute = async (pairedRouteId: string, stopData: { name_en: string; name_ar: string; lat: number; lng: number; stop_type: string; arrival_time?: string | null }) => {
+    // Get current stops of paired route
+    const { data: pairedStops } = await supabase.from('stops').select('*').eq('route_id', pairedRouteId).order('stop_order');
+    const currentCount = pairedStops?.length || 0;
+    
+    // Add stop at the beginning (since the paired route is reversed, a new stop at the end of route A goes to the beginning of route B)
+    // Actually, we insert at position 0 and shift others
+    // First shift all existing stops +1
+    if (pairedStops && pairedStops.length > 0) {
+      await Promise.all(pairedStops.map(s => 
+        supabase.from('stops').update({ stop_order: s.stop_order + 1 }).eq('id', s.id)
+      ));
+    }
+    
+    await supabase.from('stops').insert({
+      route_id: pairedRouteId,
+      name_en: stopData.name_en,
+      name_ar: stopData.name_ar,
+      lat: stopData.lat,
+      lng: stopData.lng,
+      stop_type: stopData.stop_type,
+      stop_order: 0,
+      arrival_time: stopData.arrival_time || null,
+    });
+    
+    await fetchStopsForRoute(pairedRouteId);
+  };
+
   const toggleRouteStops = async (routeId: string) => {
     if (expandedRouteStops === routeId) {
       setExpandedRouteStops(null);
