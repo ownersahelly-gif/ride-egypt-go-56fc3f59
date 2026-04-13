@@ -483,11 +483,23 @@ const MyBookings = () => {
                         </div>
                       )}
                       {['confirmed', 'pending', 'quote_pending'].includes(booking.status) && !isExpired && (
-                        <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => {
+                        <Button variant="outline" size="sm" className="w-full mt-2" onClick={async () => {
                           setEditingBooking(booking);
-                          setEditPickup(booking.custom_pickup_lat ? { lat: booking.custom_pickup_lat, lng: booking.custom_pickup_lng, name: booking.custom_pickup_name } : undefined);
-                          setEditDropoff(booking.custom_dropoff_lat ? { lat: booking.custom_dropoff_lat, lng: booking.custom_dropoff_lng, name: booking.custom_dropoff_name } : undefined);
-                          setEditingPin(null);
+                          // Fetch stops for this route
+                          if (booking.route_id) {
+                            const { data: stops } = await supabase.from('stops').select('*').eq('route_id', booking.route_id).order('stop_order');
+                            setEditStops(stops || []);
+                          }
+                          // Determine current mode from existing data
+                          const route = booking.routes;
+                          const isPickupAtOrigin = !booking.custom_pickup_lat || 
+                            (Math.abs(booking.custom_pickup_lat - route?.origin_lat) < 0.001 && Math.abs(booking.custom_pickup_lng - route?.origin_lng) < 0.001);
+                          const isDropoffAtDest = !booking.custom_dropoff_lat ||
+                            (Math.abs(booking.custom_dropoff_lat - route?.destination_lat) < 0.001 && Math.abs(booking.custom_dropoff_lng - route?.destination_lng) < 0.001);
+                          setEditPickupMode(isPickupAtOrigin ? 'start' : 'stop');
+                          setEditDropoffMode(isDropoffAtDest ? 'end' : 'stop');
+                          setEditSelectedPickupStop(null);
+                          setEditSelectedDropoffStop(null);
                         }}>
                           <Edit3 className="w-3.5 h-3.5 me-1" />
                           {lang === 'ar' ? 'تعديل الموقع' : 'Edit Location'}
