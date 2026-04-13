@@ -99,6 +99,9 @@ const AdminPanel = () => {
     origin_lng: 31.2357, destination_lat: 30.0131, destination_lng: 31.2089,
     price: 25, estimated_duration_minutes: 30,
   });
+  const [mapsLink, setMapsLink] = useState('');
+  const [parsingLink, setParsingLink] = useState(false);
+  const [importedStops, setImportedStops] = useState<{ lat: number; lng: number; name: string }[]>([]);
 
   // Shuttle assignment
   const [assignForm, setAssignForm] = useState({ shuttle_id: '', route_id: '', driver_id: '' });
@@ -254,6 +257,87 @@ const AdminPanel = () => {
     setSavingAppName(false);
   };
 
+  const parseGoogleMapsLink = async () => {
+    if (!mapsLink.trim()) return;
+    setParsingLink(true);
+    try {
+      // Parse Google Maps directions URL
+      // Format: https://www.google.com/maps/dir/Place1/Place2/Place3/@lat,lng,zoom
+      // Or: https://www.google.com/maps/dir/lat1,lng1/lat2,lng2/...
+      let url = mapsLink.trim();
+      
+      // Extract the path after /dir/
+      const dirMatch = url.match(/\/dir\/(.+?)(?:\/@|$|\?)/);
+      if (!dirMatch) {
+        toast.error(lang === 'ar' ? 'رابط غير صالح - استخدم رابط اتجاهات Google Maps' : 'Invalid link - use a Google Maps directions URL');
+        setParsingLink(false);
+        return;
+      }
+
+      const segments = dirMatch[1].split('/').filter(s => s.trim() !== '');
+      if (segments.length < 2) {
+        toast.error(lang === 'ar' ? 'يجب أن يحتوي الرابط على نقطتين على الأقل' : 'Link must have at least 2 points');
+        setParsingLink(false);
+        return;
+      }
+
+      // Geocode each segment to get lat/lng and name
+      const geocoder = new google.maps.Geocoder();
+      const resolveSegment = (seg: string): Promise<{ lat: number; lng: number; name: string }> => {
+        return new Promise((resolve, reject) => {
+          // Check if segment is already coordinates
+          const coordMatch = seg.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+          if (coordMatch) {
+            const lat = parseFloat(coordMatch[1]);
+            const lng = parseFloat(coordMatch[2]);
+            geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+              const name = status === 'OK' && results?.[0] ? results[0].formatted_address : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+              resolve({ lat, lng, name });
+            });
+          } else {
+            // It's a place name, geocode it
+            const decoded = decodeURIComponent(seg.replace(/\+/g, ' '));
+            geocoder.geocode({ address: decoded }, (results, status) => {
+              if (status === 'OK' && results?.[0]) {
+                const loc = results[0].geometry.location;
+                resolve({ lat: loc.lat(), lng: loc.lng(), name: results[0].formatted_address });
+              } else {
+                reject(new Error(`Could not find: ${decoded}`));
+              }
+            });
+          }
+        });
+      };
+
+      const points = await Promise.all(segments.map(s => resolveSegment(s)));
+      const origin = points[0];
+      const destination = points[points.length - 1];
+      const middleStops = points.slice(1, -1);
+
+      setRouteForm(p => ({
+        ...p,
+        origin_lat: parseFloat(origin.lat.toFixed(6)),
+        origin_lng: parseFloat(origin.lng.toFixed(6)),
+        origin_name_en: origin.name,
+        origin_name_ar: origin.name,
+        destination_lat: parseFloat(destination.lat.toFixed(6)),
+        destination_lng: parseFloat(destination.lng.toFixed(6)),
+        destination_name_en: destination.name,
+        destination_name_ar: destination.name,
+        name_en: p.name_en || `${origin.name.split(',')[0]} → ${destination.name.split(',')[0]}`,
+        name_ar: p.name_ar || `${origin.name.split(',')[0]} → ${destination.name.split(',')[0]}`,
+      }));
+
+      setImportedStops(middleStops);
+      toast.success(lang === 'ar' 
+        ? `تم استيراد ${points.length} نقاط (${middleStops.length} محطات وسطية)` 
+        : `Imported ${points.length} points (${middleStops.length} intermediate stops)`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to parse link');
+    }
+    setParsingLink(false);
+  };
+
   const createRoute = async () => {
     const routeData = {
       ...routeForm,
@@ -264,14 +348,42 @@ const AdminPanel = () => {
     if (editingRouteId) {
       const { error } = await supabase.from('routes').update(routeData).eq('id', editingRouteId);
       if (error) { toast.error(error.message); return; }
+      // Insert imported stops for edited route
+      if (importedStops.length > 0) {
+        const stopsToInsert = importedStops.map((s, i) => ({
+          route_id: editingRouteId,
+          name_en: s.name,
+          name_ar: s.name,
+          lat: s.lat,
+          lng: s.lng,
+          stop_order: i + 1,
+          stop_type: 'both',
+        }));
+        await supabase.from('stops').insert(stopsToInsert);
+      }
       toast.success(lang === 'ar' ? 'تم تحديث المسار' : 'Route updated!');
     } else {
-      const { error } = await supabase.from('routes').insert(routeData);
+      const { data: newRoute, error } = await supabase.from('routes').insert(routeData).select().single();
       if (error) { toast.error(error.message); return; }
-      toast.success('Route created!');
+      // Auto-insert imported stops
+      if (newRoute && importedStops.length > 0) {
+        const stopsToInsert = importedStops.map((s, i) => ({
+          route_id: newRoute.id,
+          name_en: s.name,
+          name_ar: s.name,
+          lat: s.lat,
+          lng: s.lng,
+          stop_order: i + 1,
+          stop_type: 'both',
+        }));
+        await supabase.from('stops').insert(stopsToInsert);
+      }
+      toast.success(lang === 'ar' ? 'تم إنشاء المسار مع المحطات' : 'Route created with stops!');
     }
     setShowRouteForm(false);
     setEditingRouteId(null);
+    setImportedStops([]);
+    setMapsLink('');
     setRouteForm({ name_en: '', name_ar: '', origin_name_en: '', origin_name_ar: '', destination_name_en: '', destination_name_ar: '', origin_lat: 30.0444, origin_lng: 31.2357, destination_lat: 30.0131, destination_lng: 31.2089, price: 25, estimated_duration_minutes: 30 });
     fetchAllData();
   };
@@ -723,6 +835,43 @@ const AdminPanel = () => {
             {showRouteForm && (
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
                 <h3 className="font-semibold text-foreground">{editingRouteId ? (lang === 'ar' ? 'تعديل المسار' : 'Edit Route') : (lang === 'ar' ? 'إنشاء مسار' : 'Create Route')}</h3>
+                
+                {/* Google Maps Link Import */}
+                <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-2">
+                  <Label className="flex items-center gap-2 text-sm font-medium">
+                    <Link2 className="w-4 h-4" />
+                    {lang === 'ar' ? 'استيراد من رابط Google Maps' : 'Import from Google Maps Link'}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {lang === 'ar' 
+                      ? 'الصق رابط اتجاهات Google Maps مع جميع المحطات وسيتم استيراد كل شيء تلقائياً'
+                      : 'Paste a Google Maps directions link with all stops and everything will be auto-imported'}
+                  </p>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={mapsLink} 
+                      onChange={e => setMapsLink(e.target.value)} 
+                      placeholder="https://www.google.com/maps/dir/Origin/Stop1/Stop2/Destination/..." 
+                      className="flex-1"
+                    />
+                    <Button onClick={parseGoogleMapsLink} disabled={parsingLink || !mapsLink.trim()} variant="secondary">
+                      {parsingLink ? <Loader2 className="w-4 h-4 animate-spin me-1" /> : <Globe className="w-4 h-4 me-1" />}
+                      {lang === 'ar' ? 'استيراد' : 'Import'}
+                    </Button>
+                  </div>
+                  {importedStops.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xs font-medium text-foreground">{lang === 'ar' ? `${importedStops.length} محطات مستوردة:` : `${importedStops.length} imported stops:`}</p>
+                      {importedStops.map((s, i) => (
+                        <div key={i} className="text-xs text-muted-foreground flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-primary" />
+                          {i + 1}. {s.name.substring(0, 60)}{s.name.length > 60 ? '...' : ''}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Name (EN)</Label>
