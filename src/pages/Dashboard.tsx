@@ -465,16 +465,18 @@ const Dashboard = () => {
         if (retErr) throw retErr;
       } else {
         const totalPrice = usingBundle ? 0 : basePrice;
-        const { error } = await supabase.from('bookings').insert({
-          user_id: user.id, route_id: selectedRide.route_id, shuttle_id: selectedRide.shuttle_id,
-          seats: 1, total_price: totalPrice, scheduled_date: selectedRide.ride_date,
+        const bookingPayload: any = {
+          user_id: user.id, route_id: selectedRide.route_id,
+          seats: 1, total_price: totalPrice, scheduled_date: selectedRide.ride_date || selectedRide.trip_date,
           scheduled_time: selectedRide.departure_time,
           status: asWaitlist ? 'waitlist' : (usingBundle ? 'confirmed' : 'pending'),
           payment_proof_url: proofUrl, waitlist_position: waitlistPos,
           custom_pickup_lat: pickupLat, custom_pickup_lng: pickupLng, custom_pickup_name: pickupName,
           custom_dropoff_lat: dropoffLat, custom_dropoff_lng: dropoffLng, custom_dropoff_name: dropoffName,
           trip_direction: tripDirection,
-        });
+        };
+        if (selectedRide.shuttle_id) bookingPayload.shuttle_id = selectedRide.shuttle_id;
+        const { error } = await supabase.from('bookings').insert(bookingPayload);
         if (error) throw error;
       }
 
