@@ -597,6 +597,18 @@ const AdminPanel = () => {
     await fetchStopsForRoute(routeId);
   };
 
+  const handleStopDrop = async (routeId: string, fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const stops = [...(routeStopsMap[routeId] || [])];
+    const [moved] = stops.splice(fromIndex, 1);
+    stops.splice(toIndex, 0, moved);
+    setRouteStopsMap(prev => ({ ...prev, [routeId]: stops }));
+    await Promise.all(stops.map((s, i) => 
+      supabase.from('stops').update({ stop_order: i }).eq('id', s.id)
+    ));
+    await fetchStopsForRoute(routeId);
+  };
+
 
   const seedTestData = async () => {
     try {
