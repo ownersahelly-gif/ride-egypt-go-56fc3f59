@@ -129,7 +129,12 @@ const GlobalMap = () => {
     // Day filter
     if (filters.days.length > 0) {
       if (u.preferredDays.length === 0) return false;
-      if (!filters.days.some(d => u.preferredDays.includes(d))) return false;
+      if (filters.commonDaysOnly) {
+        // User must have ALL selected days
+        if (!filters.days.every(d => u.preferredDays.includes(d))) return false;
+      } else {
+        if (!filters.days.some(d => u.preferredDays.includes(d))) return false;
+      }
     }
 
     return true;
