@@ -442,13 +442,12 @@ const BookRide = () => {
       const bookingsToInsert = directions.map((dir) => {
         const isReturn = dir === 'return';
         const rideForDir = isReturn && returnRideInstance ? returnRideInstance : selectedRide;
-        return {
+        const payload: any = {
           user_id: user.id,
           route_id: selectedRide.route_id,
-          shuttle_id: rideForDir.shuttle_id,
           seats: 1,
           total_price: singlePrice,
-          scheduled_date: rideForDir.ride_date,
+          scheduled_date: rideForDir.ride_date || rideForDir.trip_date,
           scheduled_time: rideForDir.departure_time,
           status: bookingStatus,
           payment_proof_url: proofUrl,
@@ -461,6 +460,8 @@ const BookRide = () => {
           custom_dropoff_name: isReturn ? pickupName : dropoffName,
           trip_direction: dir,
         };
+        if (rideForDir.shuttle_id) payload.shuttle_id = rideForDir.shuttle_id;
+        return payload;
       });
 
       const { error } = await supabase.from('bookings').insert(bookingsToInsert);
@@ -472,7 +473,7 @@ const BookRide = () => {
         }).eq('id', activeBundlePurchase.id);
       }
 
-      if (!asWaitlist) {
+      if (!isPublished && !asWaitlist) {
         await supabase.from('ride_instances').update({
           available_seats: selectedRide.available_seats - 1,
         }).eq('id', selectedRide.id);
