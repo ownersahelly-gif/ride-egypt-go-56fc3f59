@@ -1289,6 +1289,18 @@ const AdminPanel = () => {
                   <Button size="sm" variant="secondary" onClick={() => reverseRoute(route)}>
                     <Copy className="w-3.5 h-3.5 me-1" />{lang === 'ar' ? 'عكس المسار' : 'Reverse Route'}
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    const stops = (routeStopsMap[route.id] || []).sort((a: any, b: any) => a.stop_order - b.stop_order);
+                    const points = [
+                      `${route.origin_lat},${route.origin_lng}`,
+                      ...stops.map((s: any) => `${s.lat},${s.lng}`),
+                      `${route.destination_lat},${route.destination_lng}`,
+                    ];
+                    const url = `https://www.google.com/maps/dir/${points.join('/')}`;
+                    window.open(url, '_blank');
+                  }}>
+                    <ExternalLink className="w-3.5 h-3.5 me-1" />{lang === 'ar' ? 'رابط الخريطة' : 'Maps Link'}
+                  </Button>
                 </div>
 
                 {/* Publish Trip Form */}
