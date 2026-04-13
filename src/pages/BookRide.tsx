@@ -268,11 +268,22 @@ const BookRide = () => {
 
   const filteredRides = rideInstances.filter((ri) => {
     if (!ri.routes) return false;
-    if (searchPickup && !smartMatchRoute(searchPickup, ri)) return false;
-    if (searchDropoff && !smartMatchRoute(searchDropoff, ri)) return false;
+    if (ri._type !== 'published') {
+      if (searchPickup && !smartMatchRoute(searchPickup, ri)) return false;
+      if (searchDropoff && !smartMatchRoute(searchDropoff, ri)) return false;
+    } else {
+      // For published trips, filter by route name or origin/destination text
+      const searchText = (searchPickup + ' ' + searchDropoff).toLowerCase();
+      if (searchText.trim()) {
+        const routeText = `${ri.routes.name_en} ${ri.routes.name_ar} ${ri.routes.origin_name_en} ${ri.routes.origin_name_ar} ${ri.routes.destination_name_en} ${ri.routes.destination_name_ar}`.toLowerCase();
+        if (!routeText.includes(searchPickup.toLowerCase()) && searchPickup) return false;
+        if (!routeText.includes(searchDropoff.toLowerCase()) && searchDropoff) return false;
+      }
+    }
     // Hide rides whose departure time has already passed (today only)
     const today = new Date().toISOString().split('T')[0];
-    if (ri.ride_date === today && ri.departure_time) {
+    const rideDate = ri.ride_date || ri.trip_date;
+    if (rideDate === today && ri.departure_time) {
       const [hh, mm] = ri.departure_time.split(':').map(Number);
       const dep = new Date();
       dep.setHours(hh, mm, 0, 0);
