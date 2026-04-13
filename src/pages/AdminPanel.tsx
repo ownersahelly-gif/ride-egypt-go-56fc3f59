@@ -90,6 +90,8 @@ const AdminPanel = () => {
   const [partnerPackageRequests, setPartnerPackageRequests] = useState<any[]>([]);
   const [expandedGroupIndex, setExpandedGroupIndex] = useState<number | null>(null);
   const [creatingRouteFromGroup, setCreatingRouteFromGroup] = useState<number | null>(null);
+  const [editedGroupStops, setEditedGroupStops] = useState<Record<number, GeneratedRoute | null>>({});
+  const [draggingStopIdx, setDraggingStopIdx] = useState<number | null>(null);
 
   // Published trips
   const [publishedTrips, setPublishedTrips] = useState<any[]>([]);
