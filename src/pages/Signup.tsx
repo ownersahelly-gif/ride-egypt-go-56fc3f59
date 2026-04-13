@@ -288,6 +288,7 @@ const CompanySignup = ({ lang, t, appName, signUp, navigate, toast, referralCode
           </Link>
         </div>
       </div>
+      </div>
     </div>
   );
 };
@@ -615,6 +616,7 @@ const Signup = () => {
           </Link>
         </div>
       </div>
+      </div>
     );
   }
 
@@ -721,6 +723,7 @@ const Signup = () => {
             </Link>
           </form>
         </div>
+      </div>
       </div>
     );
   }
