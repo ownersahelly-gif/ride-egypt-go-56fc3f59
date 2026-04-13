@@ -1615,6 +1615,11 @@ const AdminPanel = () => {
                             <div>
                               <p className="font-medium text-foreground text-sm">{b.profile?.full_name || 'Unknown'} — {lang === 'ar' ? b.routes?.name_ar : b.routes?.name_en}</p>
                               <p className="text-xs text-muted-foreground">{b.scheduled_date} · {b.scheduled_time?.slice(0, 5)} · {b.trip_direction}</p>
+                              {(() => {
+                                const pNum = findNearestStopNumber(b.route_id, b.custom_pickup_lat, b.custom_pickup_lng);
+                                const dNum = findNearestStopNumber(b.route_id, b.custom_dropoff_lat, b.custom_dropoff_lng);
+                                return (pNum || dNum) ? <p className="text-xs text-muted-foreground font-medium">🔢 {lang === 'ar' ? 'وقفة' : 'Stop'} {pNum ?? '?'} → {lang === 'ar' ? 'وقفة' : 'Stop'} {dNum ?? '?'}</p> : null;
+                              })()}
                               {b.custom_pickup_name && <p className="text-xs text-muted-foreground">📍 {b.custom_pickup_name} → {b.custom_dropoff_name}</p>}
                               {b.profile?.phone && <p className="text-xs text-muted-foreground">📞 {b.profile.phone}</p>}
                             </div>
@@ -1655,6 +1660,11 @@ const AdminPanel = () => {
                     <div>
                       <p className="font-medium text-foreground text-sm">{b.profile?.full_name || 'Unknown'} — {lang === 'ar' ? b.routes?.name_ar : b.routes?.name_en}</p>
                       <p className="text-xs text-muted-foreground">{b.scheduled_date} · {b.scheduled_time} · {b.seats} seat(s) · {b.total_price} EGP</p>
+                      {(() => {
+                        const pNum = findNearestStopNumber(b.route_id, b.custom_pickup_lat, b.custom_pickup_lng);
+                        const dNum = findNearestStopNumber(b.route_id, b.custom_dropoff_lat, b.custom_dropoff_lng);
+                        return (pNum || dNum) ? <p className="text-xs text-muted-foreground font-medium">🔢 {lang === 'ar' ? 'وقفة' : 'Stop'} {pNum ?? '?'} → {lang === 'ar' ? 'وقفة' : 'Stop'} {dNum ?? '?'}</p> : null;
+                      })()}
                       {b.custom_pickup_name && (
                         <p className="text-xs text-muted-foreground">
                           📍 {b.custom_pickup_name} → {b.custom_dropoff_name}
