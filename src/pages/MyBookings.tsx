@@ -857,7 +857,7 @@ const MyBookings = () => {
                   {lang === 'ar' ? 'نقطة الركوب' : 'Pickup'}
                 </h3>
                 <div className="flex gap-2">
-                  <button onClick={() => { setEditPickupMode('start'); setEditSelectedPickupStop(null); }}
+                  <button onClick={() => { setEditPickupMode('start'); setEditSelectedPickupStop(null); if (route) zoomToPoint(route.origin_lat, route.origin_lng); }}
                     className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${editPickupMode === 'start' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'}`}>
                     {lang === 'ar' ? '🚏 نقطة الانطلاق' : '🚏 Starting Point'}
                   </button>
@@ -877,7 +877,7 @@ const MyBookings = () => {
                 {editPickupMode === 'stop' && (
                   <div className="space-y-1 max-h-40 overflow-y-auto">
                     {pickupStops.map((stop: any) => (
-                      <button key={stop.id} onClick={() => setEditSelectedPickupStop(stop)}
+                      <button key={stop.id} onClick={() => { setEditSelectedPickupStop(stop); zoomToPoint(stop.lat, stop.lng); }}
                         className={`w-full text-start px-3 py-2 rounded-lg text-xs border transition-colors flex items-center gap-2 ${
                           editSelectedPickupStop?.id === stop.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground border-border hover:border-primary/50'
                         }`}>
