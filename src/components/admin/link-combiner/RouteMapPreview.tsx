@@ -6,6 +6,20 @@ import { toast } from 'sonner';
 import type { OrderedStop } from './types';
 import { buildGoogleMapsLink, haversine } from './utils';
 
+/** Reverse-geocode a position to get a readable address */
+function reverseGeocode(lat: number, lng: number): Promise<string> {
+  return new Promise((resolve) => {
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+      if (status === 'OK' && results?.[0]) {
+        resolve(results[0].formatted_address);
+      } else {
+        resolve(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+      }
+    });
+  });
+}
+
 interface Props {
   stops: OrderedStop[];
   onReorder: (stops: OrderedStop[]) => void;
@@ -97,6 +111,17 @@ const RouteMapPreview = ({ stops, onReorder, lang }: Props) => {
     return d;
   }, [stops]);
 
+  const handleMarkerDragEnd = useCallback(async (idx: number, e: google.maps.MapMouseEvent) => {
+    if (!e.latLng) return;
+    const newLat = e.latLng.lat();
+    const newLng = e.latLng.lng();
+    const newName = await reverseGeocode(newLat, newLng);
+    const newStops = [...stops];
+    newStops[idx] = { ...newStops[idx], lat: newLat, lng: newLng, name: newName };
+    onReorder(newStops);
+    toast.success(lang === 'ar' ? 'تم تحديث الموقع' : 'Location updated');
+  }, [stops, onReorder, lang]);
+
   const deleteStop = useCallback((idx: number) => {
     const newStops = stops.filter((_, i) => i !== idx);
     onReorder(newStops);
@@ -158,8 +183,10 @@ const RouteMapPreview = ({ stops, onReorder, lang }: Props) => {
         >
           {stops.map((stop, idx) => (
             <Marker
-              key={`${stop.lat}-${stop.lng}-${idx}`}
+              key={`marker-${idx}`}
               position={{ lat: stop.lat, lng: stop.lng }}
+              draggable
+              onDragEnd={(e) => handleMarkerDragEnd(idx, e)}
               label={{
                 text: `${idx + 1}`,
                 color: '#fff',
