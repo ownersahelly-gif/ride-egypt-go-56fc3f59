@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleMap, Marker, Polyline } from '@react-google-maps/api';
 import { Button } from '@/components/ui/button';
-import { Copy, ExternalLink, MapPin, Trash2, GripVertical, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Copy, ExternalLink, MapPin, Trash2, GripVertical, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import type { OrderedStop } from './types';
 import { buildGoogleMapsLink, haversine } from './utils';
 
@@ -37,6 +39,8 @@ const RouteMapPreview = ({ stops, onReorder, lang }: Props) => {
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
   const [routeDuration, setRouteDuration] = useState<number | null>(null);
+  const [routeName, setRouteName] = useState('');
+  const [saving, setSaving] = useState(false);
   const [initialCenter] = useState<google.maps.LatLngLiteral>(() => {
     if (stops.length === 0) return { lat: 30.05, lng: 31.25 };
     const lat = stops.reduce((sum, stop) => sum + stop.lat, 0) / stops.length;
@@ -172,6 +176,26 @@ const RouteMapPreview = ({ stops, onReorder, lang }: Props) => {
     toast.success(lang === 'ar' ? 'تم النسخ!' : 'Copied!');
   };
 
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase.from('combined_routes' as any).insert({
+        name: routeName.trim() || null,
+        stops_json: stops,
+        final_link: finalLink,
+        created_by: user.id,
+      });
+      if (error) throw error;
+      toast.success(lang === 'ar' ? 'تم حفظ المسار بنجاح!' : 'Route saved successfully!');
+    } catch (err: any) {
+      toast.error(err.message || (lang === 'ar' ? 'فشل في الحفظ' : 'Failed to save'));
+    }
+    setSaving(false);
+  };
+
   return (
     <div className="space-y-4">
       {/* Map */}
@@ -283,7 +307,7 @@ const RouteMapPreview = ({ stops, onReorder, lang }: Props) => {
         ))}
       </div>
 
-      {/* Final link */}
+      {/* Save & Final link */}
       <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-3">
         <p className="text-sm font-semibold text-primary">
           {lang === 'ar' ? 'الرابط النهائي' : 'Final Route Link'}
@@ -297,6 +321,23 @@ const RouteMapPreview = ({ stops, onReorder, lang }: Props) => {
             <ExternalLink className="w-4 h-4" />
           </Button>
         </div>
+
+        {/* Save to database */}
+        <div className="flex gap-2 items-end pt-2 border-t border-border">
+          <div className="flex-1">
+            <Input
+              placeholder={lang === 'ar' ? 'اسم المسار (اختياري)...' : 'Route name (optional)...'}
+              value={routeName}
+              onChange={(e) => setRouteName(e.target.value)}
+              className="text-sm"
+            />
+          </div>
+          <Button onClick={handleSave} disabled={saving || stops.length < 2} className="gap-2">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {lang === 'ar' ? 'حفظ' : 'Save Route'}
+          </Button>
+        </div>
+
         <p className="text-xs text-muted-foreground">
           {lang === 'ar'
             ? 'اسحب المحطات لتغيير الترتيب أو احذفها — الخريطة والرابط يتحدثان تلقائياً'
