@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Phone, PhoneOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const MAX_CALL_DURATION = 90; // 1.5 minutes max
 
@@ -35,7 +36,6 @@ const VoiceCall = ({ tripId, userId }: VoiceCallProps) => {
     setDuration(0);
   }, []);
 
-  // Auto-end at max duration
   useEffect(() => {
     if (inCall && duration >= MAX_CALL_DURATION) {
       endCall();
@@ -46,6 +46,34 @@ const VoiceCall = ({ tripId, userId }: VoiceCallProps) => {
     try {
       setConnecting(true);
 
+      const { data: authData } = await supabase.auth.getUser();
+      let callerName = 'Driver';
+
+      if (authData.user?.id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', authData.user.id)
+          .maybeSingle();
+
+        if (profile?.full_name?.trim()) {
+          callerName = profile.full_name.trim();
+        }
+      }
+
+      const { error: pushError } = await supabase.functions.invoke('initiate-call', {
+        body: {
+          recipientUserId: userId,
+          driverName: callerName,
+          tripId,
+        },
+      });
+
+      if (pushError) {
+        toast.error(pushError.message || 'Failed to notify recipient');
+        return;
+      }
+
       const uid = Math.floor(Math.random() * 100000);
       const { data, error } = await supabase.functions.invoke('agora-token', {
         body: { channelName: `call_${tripId}`, uid },
@@ -53,7 +81,7 @@ const VoiceCall = ({ tripId, userId }: VoiceCallProps) => {
 
       if (error || !data?.token) {
         console.error('Failed to get Agora token:', error);
-        setConnecting(false);
+        toast.error('Failed to start call');
         return;
       }
 
@@ -68,7 +96,7 @@ const VoiceCall = ({ tripId, userId }: VoiceCallProps) => {
       localTrackRef.current = localAudioTrack;
       await client.publish([localAudioTrack]);
 
-      client.on('user-published', async (user: any, mediaType: "audio" | "video" | "datachannel") => {
+      client.on('user-published', async (user: any, mediaType: 'audio' | 'video' | 'datachannel') => {
         await client.subscribe(user, mediaType);
         if (mediaType === 'audio') {
           user.audioTrack?.play();
@@ -83,10 +111,11 @@ const VoiceCall = ({ tripId, userId }: VoiceCallProps) => {
       setInCall(true);
     } catch (err) {
       console.error('Error starting call:', err);
+      toast.error('Error starting call');
     } finally {
       setConnecting(false);
     }
-  }, [tripId]);
+  }, [tripId, userId]);
 
   if (inCall) {
     return (
@@ -104,12 +133,13 @@ const VoiceCall = ({ tripId, userId }: VoiceCallProps) => {
   return (
     <Button
       onClick={startCall}
+      variant="outline"
       size="icon"
-      className="rounded-full bg-green-600 hover:bg-green-700 w-10 h-10"
+      className="rounded-full w-10 h-10"
       disabled={connecting}
       title="Call"
     >
-      <Phone className="w-5 h-5 text-white" />
+      <Phone className="w-5 h-5" />
     </Button>
   );
 };

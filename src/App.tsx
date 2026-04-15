@@ -38,7 +38,7 @@ import { useIncomingCall } from "./hooks/useIncomingCall";
 
 const queryClient = new QueryClient();
 
-const IncomingCallListener = () => {
+const AppMobileServices = () => {
   useIncomingCall();
   return null;
 };
@@ -52,7 +52,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <IncomingCallListener />
+            <AppMobileServices />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
