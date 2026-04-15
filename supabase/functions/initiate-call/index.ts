@@ -1,8 +1,9 @@
+import { createClient } from 'npm:@supabase/supabase-js@2'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
-
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -10,13 +11,49 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { riderFcmToken, driverName, tripId } = await req.json()
+    const { riderFcmToken, recipientUserId, driverName, callerName, tripId } = await req.json()
+    const resolvedCallerName = (driverName || callerName || '').trim()
+    let resolvedToken = (riderFcmToken || '').trim()
 
-    if (!riderFcmToken || !driverName || !tripId) {
+    if ((!resolvedToken && !recipientUserId) || !resolvedCallerName || !tripId) {
       return new Response(
-        JSON.stringify({ error: 'riderFcmToken, driverName, and tripId are required' }),
+        JSON.stringify({ error: 'recipientUserId or riderFcmToken, caller name, and tripId are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    if (!resolvedToken && recipientUserId) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+      if (!supabaseUrl || !serviceRoleKey) {
+        return new Response(
+          JSON.stringify({ error: 'Supabase server credentials not configured' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const supabase = createClient(supabaseUrl, serviceRoleKey)
+      const { data: tokenRow, error: tokenError } = await supabase
+        .from('device_tokens')
+        .select('token')
+        .eq('user_id', recipientUserId)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (tokenError) {
+        console.error('Failed to fetch recipient token:', tokenError)
+      }
+
+      resolvedToken = tokenRow?.token?.trim() || ''
+
+      if (!resolvedToken) {
+        return new Response(
+          JSON.stringify({ error: 'No device token found for recipient user' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
     }
 
     const serviceAccountJson = Deno.env.get('FCM_SERVICE_ACCOUNT_JSON')
@@ -29,7 +66,6 @@ Deno.serve(async (req) => {
 
     const serviceAccount = JSON.parse(serviceAccountJson)
 
-    // Build JWT for FCM v1 API
     const now = Math.floor(Date.now() / 1000)
     const header = { alg: 'RS256', typ: 'JWT' }
     const payload = {
@@ -45,7 +81,6 @@ Deno.serve(async (req) => {
 
     const unsignedToken = `${encode(header)}.${encode(payload)}`
 
-    // Import private key and sign
     const pemKey = serviceAccount.private_key
     const pemContents = pemKey.replace(/-----BEGIN PRIVATE KEY-----/, '').replace(/-----END PRIVATE KEY-----/, '').replace(/\n/g, '')
     const binaryKey = Uint8Array.from(atob(pemContents), (c) => c.charCodeAt(0))
@@ -66,7 +101,6 @@ Deno.serve(async (req) => {
 
     const signedJwt = `${unsignedToken}.${btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`
 
-    // Exchange JWT for access token
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -84,7 +118,6 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Send FCM v1 push notification
     const projectId = serviceAccount.project_id
     const fcmRes = await fetch(
       `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
@@ -96,19 +129,33 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           message: {
-            token: riderFcmToken,
+            token: resolvedToken,
+            notification: {
+              title: resolvedCallerName,
+              body: 'Incoming call',
+            },
             data: {
               type: 'incoming_call',
               tripId,
-              caller: driverName,
+              caller: resolvedCallerName,
             },
             android: {
               priority: 'high',
+              notification: {
+                sound: 'default',
+                channel_id: 'default',
+              },
             },
             apns: {
               headers: {
                 'apns-priority': '10',
-                'apns-push-type': 'voip',
+                'apns-push-type': 'alert',
+              },
+              payload: {
+                aps: {
+                  sound: 'default',
+                  'content-available': 1,
+                },
               },
             },
           },
@@ -118,6 +165,13 @@ Deno.serve(async (req) => {
 
     const fcmResult = await fcmRes.json()
     console.log('FCM response:', JSON.stringify(fcmResult))
+
+    if (!fcmRes.ok) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to send push notification', result: fcmResult }),
+        { status: fcmRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     return new Response(
       JSON.stringify({ success: true, result: fcmResult }),

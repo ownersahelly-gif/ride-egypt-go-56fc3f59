@@ -35,11 +35,13 @@ import Support from "./pages/Support.tsx";
 import GlobalNotifications from "./components/GlobalNotifications";
 import IncomingCall from "./pages/IncomingCall";
 import { useIncomingCall } from "./hooks/useIncomingCall";
+import { usePushNotifications } from "./hooks/usePushNotifications";
 
 const queryClient = new QueryClient();
 
-const IncomingCallListener = () => {
+const AppMobileServices = () => {
   useIncomingCall();
+  usePushNotifications();
   return null;
 };
 
@@ -52,7 +54,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <IncomingCallListener />
+            <AppMobileServices />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
